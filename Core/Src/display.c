@@ -65,7 +65,7 @@ void display_clear_screen(SSD1306_COLOR color)
 void display_start_screen(void)
 {
   display_clear_screen(Black);
-  display_string_to_status_line("Enc1      Enc2", 0);
+  display_string_to_status_line("Enc1 0    Enc2 0", 0);
 
 //  display_string("Waiting .......", 1, 0, White, true);
 }

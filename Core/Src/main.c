@@ -204,14 +204,14 @@ int main(void)
   while (1)
   {
 	  uint8_t note;
-	  uint8_t previous_note = 0;
+	  static uint8_t previous_note = 0;
 	  if(0 != tim4_counter)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim4, 0);
 		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
 			  ;
 		  previous_note = note;
-		  midiSendNoteOn(note, 0, 80);
+		  midiSendNoteOn(note, 0, randomize(20, 120));
 		  tim4_counter = 0;
 		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(300, 800));
 		  HAL_TIM_Base_Start_IT(&htim4);
