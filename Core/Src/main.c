@@ -23,6 +23,9 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "stdlib.h"
+#include "display.h"
+#include "scheduler.h"
+#include "tasks.h"
 
 /* USER CODE END Includes */
 
@@ -53,10 +56,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 volatile uint32_t ms_counter = 0;
-
-//uint8_t note_on[3] = {0x90, 0x3c, 0x57};
-//uint8_t note_off[3] = {0x80, 0x3c, 0x78};
-//uint8_t midi_note_packet[3];
+volatile uint16_t tim4_counter = 0;
 
 // C major scale starting from C2 (Middle C ... i.e. C4 ... = MIDI note 60)
 const uint8_t c_major_scale[] = {
@@ -104,37 +104,11 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
-//void midi_SendNoteOn(uint8_t note, uint8_t channel, uint8_t velocity);
-//void midi_SendNoteOff(uint8_t note, uint8_t channel, uint8_t velocity);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//void midiSendNoteOn(uint8_t note, uint8_t channel, uint8_t velocity)
-//{
-//	uint8_t midi_note_packet[3];
-//	if(channel < 1 || channel > 16)
-//		channel = 1; // Default to channel 1 if out of range
-//	channel -= 1; // Convert to 0-based
-//	midi_note_packet[0] = 0x90 | (channel & 0x0f);
-//	midi_note_packet[1] = note & 0x7f;
-//	midi_note_packet[2] = velocity & 0x7f;
-//	HAL_UART_Transmit(&huart2, midi_note_packet, sizeof(midi_note_packet), 100);
-//}
-//
-//void midiSendNoteOff(uint8_t note, uint8_t channel, uint8_t velocity)
-//{
-//	uint8_t midi_note_packet[3];
-//	if(channel >= 16)
-//		channel = 16;
-//	if(channel > 0)
-//		channel -= 1;
-//	midi_note_packet[0] = 0x80 | (channel & 0x0f);
-//	midi_note_packet[1] = note & 0x7f;
-//	midi_note_packet[2] = velocity & 0x7f;
-//	HAL_UART_Transmit(&huart2, midi_note_packet, sizeof(midi_note_packet), 100);
-//}
 
 static void midiSend(uint8_t status, uint8_t note, uint8_t channel, uint8_t velocity)
 {
@@ -200,53 +174,28 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
+  display_init();
+  display_splash_screen();
+
   HAL_Delay(1000);
+
+  /* initialize OLED display and paint opening UI screens */
+  display_start_screen();
+
+  // Start the encoder interfaces (TIM2 - encoder_1, TIM3 - encoder_2)
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+
+  __HAL_TIM_CLEAR_IT(&htim4, TIM_FLAG_UPDATE);
+
+  scheduler_init();
+  tasks_init();
+
+  HAL_Delay(1000);
+
   srand(HAL_GetTick()); // Seed with system tick
-//  int x = RAND_MAX;
-//  int upper_bound = 28;
-//  int lower_bound = 0;
-//
-//  int delay_upper_bound = 1000;
-//  int delay_lower_bound = 750;
-  int previous_note = 0;
 
-//  uint8_t note = 0x3c;
-//  note_on[1] = note;
-//  note_off[1] = note;
-//  HAL_UART_Transmit(&huart2, note_on, sizeof(note_on), 100);
-//  HAL_Delay(1000);
-//  HAL_UART_Transmit(&huart2, note_off, sizeof(note_off), 100);
-
-//  char printBuffer[80];
-//  for(uint8_t i = 0; i < 24; i++)
-//  {
-//	  sprintf(printBuffer, "Random value = %d\r\n", randomize(0, 28));
-//	  HAL_UART_Transmit(&huart2, printBuffer, 19, 100);
-//  }
-//
-//  while(1)
-//	  ;
-
-	for(uint8_t i = 0; i < 24; i++)
-	{
-		uint8_t note;
-//		uint8_t channel = randomize(1, 6);
-//		int random_delay = rand() % (delay_upper_bound - delay_lower_bound + 1) + delay_lower_bound;
-//		int note = c_major_scale[(rand() % (upper_bound - lower_bound + 1) + lower_bound)];
-		while(previous_note == (note = c_major_scale[randomize(0, 14)]))
-			;
-		previous_note = note;
-//		note = c_major_scale[14];
-//		note_on[1] = note;
-//		note_off[1] = note;
-//		HAL_UART_Transmit(&huart2, note_on, sizeof(note_on), 100);
-		midiSendNoteOn(note, 4, 80);
-		HAL_Delay(randomize(750, 1000));
-//		HAL_UART_Transmit(&huart2, note_off, sizeof(note_off), 100);
-		midiSendNoteOff(note, 4, 50);
-		HAL_Delay(250);
-	}
-
+  HAL_TIM_Base_Start_IT(&htim4);
 
   /* USER CODE END 2 */
 
@@ -254,17 +203,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	uint8_t note = 0x3c;
-//
-//	for(uint8_t i = 0; i < 8; i++)
-//	{
-//		note += i;
-//		note_on[1] = note;
-//		note_off[1] = note;
-//		HAL_UART_Transmit(&huart2, note_on, sizeof(note_on), 100);
-//		HAL_Delay(1000);
-//
-//	}
+	  uint8_t note;
+	  uint8_t previous_note = 0;
+	  if(0 != tim4_counter)
+	  {
+		  __HAL_TIM_SET_COUNTER(&htim4, 0);
+		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
+			  ;
+		  previous_note = note;
+		  midiSendNoteOn(note, 0, 80);
+		  tim4_counter = 0;
+		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(300, 800));
+		  HAL_TIM_Base_Start_IT(&htim4);
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -593,9 +545,32 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_SYSTICK_Callback(void) {
+    ms_counter++;
+    run_scheduled_tasks();
+}
+
 int __io_putchar(int ch) {
     HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
     return ch;
+}
+
+/**
+  * TIM4 - time-out timer
+  *
+  * @brief  Period elapsed callback in non blocking mode
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM4)
+	{
+		tim4_counter++; /* increment timeout counter */
+		HAL_TIM_Base_Stop_IT(htim);
+	}
+
 }
 
 /* USER CODE END 4 */
