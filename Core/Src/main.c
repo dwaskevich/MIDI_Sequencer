@@ -211,7 +211,7 @@ int main(void)
 		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
 			  ;
 		  previous_note = note;
-		  midiSendNoteOn(note, 0, randomize(20, 120));
+		  midiSendNoteOn(note, randomize(0, 7), randomize(20, 120));
 		  tim4_counter = 0;
 		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(300, 800));
 		  HAL_TIM_Base_Start_IT(&htim4);
