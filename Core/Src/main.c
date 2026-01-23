@@ -26,6 +26,7 @@
 #include "display.h"
 #include "scheduler.h"
 #include "tasks.h"
+#include "midi.h"
 
 /* USER CODE END Includes */
 
@@ -36,6 +37,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+/* constants for OLED display */
+#define FIRST_DISPLAY_LINE	1u
+#define LAST_DISPLAY_LINE	6u
 
 /* USER CODE END PD */
 
@@ -91,6 +95,8 @@ const uint8_t c_major_scale[] = {
 	84  // C6
 };
 
+uint8_t midi_note_packet[3];
+static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
 
 /* USER CODE END PV */
 
@@ -115,11 +121,10 @@ static void midiSend(uint8_t status, uint8_t note, uint8_t channel, uint8_t velo
     if (channel < 1 || channel > 16)
     	channel = 1;
     channel -= 1;
-    uint8_t packet[3] = {
-        (status & 0xF0) | (channel & 0x0F),
-        note & 0x7F,
-        velocity & 0x7F};
-    HAL_UART_Transmit(&huart2, packet, sizeof(packet), 100);
+    midi_note_packet[0] = (status & 0xF0) | (channel & 0x0F);
+    midi_note_packet[1] = note & 0x7F;
+    midi_note_packet[2] = velocity & 0x7F;
+    HAL_UART_Transmit(&huart1, midi_note_packet, sizeof(midi_note_packet), 100);
 }
 
 void midiSendNoteOn(uint8_t note, uint8_t channel, uint8_t velocity) {
@@ -191,7 +196,7 @@ int main(void)
   scheduler_init();
   tasks_init();
 
-  HAL_Delay(1000);
+  printf("UART started ....\r\n");
 
   srand(HAL_GetTick()); // Seed with system tick
 
@@ -215,6 +220,13 @@ int main(void)
 		  tim4_counter = 0;
 		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(300, 800));
 		  HAL_TIM_Base_Start_IT(&htim4);
+
+		  if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
+				display_clear_page(Black);
+		  display_string(midi_process_message(midi_note_packet[0], midi_note_packet[1], midi_note_packet[2]), display_line_pointer, 0, White, true);
+		  display_line_pointer++; /* move display pointer */
+		  if(display_line_pointer > LAST_DISPLAY_LINE)
+			  display_line_pointer = FIRST_DISPLAY_LINE;
 	  }
 
     /* USER CODE END WHILE */
@@ -483,7 +495,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 31250;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
