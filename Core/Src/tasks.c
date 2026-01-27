@@ -9,10 +9,13 @@
 #include "tasks.h"
 #include "scheduler.h"
 #include "main.h"  // For GPIO or other shared symbols
+#include "buttons.h"
 #include "display.h"
 
 extern volatile bool is_sequencer_on;
 extern volatile uint8_t channel_range;
+
+char printBuffer[30];
 
 // Task implementation
 
@@ -23,7 +26,6 @@ void heartbeat(void)
 
 void read_encoders(void)
 {
-	char printBuffer[30];
 	static int16_t encoder1_previous_value = 0, encoder2_previous_value = 0;
 
 	int16_t encoder1_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim2) / 2;
@@ -35,7 +37,6 @@ void read_encoders(void)
 		channel_range = (uint8_t)encoder1_current_value % 8;
 		if(0 == channel_range)
 			channel_range = 1;
-//		sprintf(printBuffer, "%-3d", encoder1_current_value);
 		sprintf(printBuffer, "%-3d", channel_range);
 		display_string_to_status_line(printBuffer, ENCODER1_POSITION);
 		encoder1_previous_value = encoder1_current_value;
@@ -44,10 +45,6 @@ void read_encoders(void)
 	int16_t delta2 = (int16_t)(encoder2_current_value - encoder2_previous_value);
 	if (0 != delta2)
 	{
-		is_sequencer_on = encoder2_current_value % 2;
-//		sprintf(printBuffer, "%-3d", encoder2_current_value);
-		sprintf(printBuffer, is_sequencer_on ? "On " : "Off");
-		display_string_to_status_line(printBuffer, ENCODER2_POSITION);
 		encoder2_previous_value = encoder2_current_value;
 	}
 }
@@ -62,13 +59,46 @@ void read_encoders(void)
 //	midiSendNoteOn(note, 4, 80);
 //}
 
+static void poll_buttons(void) {
+    button_poll();
+
+    switch (button_get_event(BUTTON_1)) {
+        case BUTTON_EVENT_SHORT_PRESS:
+
+            break;
+        case BUTTON_EVENT_LONG_PRESS:
+
+            break;
+        default:
+            break;
+    }
+
+    switch (button_get_event(BUTTON_2)) {
+        case BUTTON_EVENT_SHORT_PRESS:
+        	if(is_sequencer_on)
+        		is_sequencer_on = false;
+        	else
+        		is_sequencer_on = true;
+
+        	sprintf(printBuffer, is_sequencer_on ? "On " : "Off");
+			display_string_to_status_line(printBuffer, ENCODER2_POSITION);
+
+            break;
+        case BUTTON_EVENT_LONG_PRESS:
+            // e.g., reset filter
+            break;
+        default:
+            break;
+    }
+}
+
 
 // --- Task initialization/registration ---
 void tasks_init(void) {
     scheduler_add_task(heartbeat, 500);
     scheduler_add_task(read_encoders, 21);
 //    scheduler_add_task(play_sequence, 500);
-//    scheduler_add_task(poll_buttons, 13);
+    scheduler_add_task(poll_buttons, 13);
     // Add more tasks here
 }
 

@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "buttons.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +52,20 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	GPIO_PinState state;
+    switch (GPIO_Pin) {
+        case GPIO_PIN_4:  // Button1 (PA4)
+        	state = HAL_GPIO_ReadPin(Button1_GPIO_Port, GPIO_Pin);
+        	button_exti_trigger(BUTTON_1, !state);
+            break;
+        case GPIO_PIN_5:  // Button2 (PA5)
+        	state = HAL_GPIO_ReadPin(Button2_GPIO_Port, GPIO_Pin);
+        	button_exti_trigger(BUTTON_2, !state);
+            break;
+    }
+}
 
 /* USER CODE END 0 */
 

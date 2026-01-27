@@ -14,8 +14,8 @@
 #include "ssd1306_fonts.h"
 
 #define DISPLAY_DEFAULT_FONT Font_6x8
-#define ENCODER1_POSITION 17
-#define ENCODER2_POSITION 7
+#define ENCODER1_POSITION 14
+#define ENCODER2_POSITION 4
 
 void display_init(void);
 void display_splash_screen(void);
