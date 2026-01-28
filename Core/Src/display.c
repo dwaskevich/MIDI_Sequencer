@@ -12,6 +12,7 @@
 
 #define STATUS_LINE_LINE_NUMBER  0
 #define STATUS_LINE_STATUS_WIDTH  21
+#define LINE_POSITION_VERTICAL_OFFSET 2
 
 char hello_world_str[] = "   MIDI Sequencer";
 char print_buffer[128];
@@ -63,6 +64,7 @@ void display_clear_screen(SSD1306_COLOR color)
 void display_start_screen(void)
 {
   display_clear_screen(Black);
+  ssd1306_Line(0, DISPLAY_DEFAULT_FONT.height, SSD1306_WIDTH, DISPLAY_DEFAULT_FONT.height, White);
   display_string_to_status_line("Seq Off Range 1", 0);
 }
 
@@ -75,7 +77,7 @@ int16_t display_string(char *str, uint8_t line_number, uint8_t cursor_position, 
 
 	if(line_number > number_lines - 1)
 		line_number = number_lines - 1;
-	ssd1306_SetCursor(x_position, line_number * line_height);
+	ssd1306_SetCursor(x_position, (line_number * line_height + LINE_POSITION_VERTICAL_OFFSET));
 	ssd1306_WriteString(str, DISPLAY_DEFAULT_FONT, color);
 	if(true == ceol_flag)
 	{
@@ -88,7 +90,10 @@ int16_t display_string(char *str, uint8_t line_number, uint8_t cursor_position, 
 
 int16_t display_string_to_status_line(char *str, uint8_t position)
 {
-	display_string(str, STATUS_LINE_LINE_NUMBER, position, White, false);
+//	display_string(str, STATUS_LINE_LINE_NUMBER, position, White, false);
+	ssd1306_SetCursor(position * DISPLAY_DEFAULT_FONT.width, STATUS_LINE_LINE_NUMBER * line_height);
+	ssd1306_WriteString(str, DISPLAY_DEFAULT_FONT, White);
+	ssd1306_UpdateScreen();
 
 	return 0;
 }

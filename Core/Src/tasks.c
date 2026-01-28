@@ -75,6 +75,7 @@ static void poll_buttons(void) {
 
     switch (button_get_event(BUTTON_2)) {
         case BUTTON_EVENT_SHORT_PRESS:
+        	/* toggle on/off */
         	if(is_sequencer_on)
         		is_sequencer_on = false;
         	else
@@ -85,7 +86,7 @@ static void poll_buttons(void) {
 
             break;
         case BUTTON_EVENT_LONG_PRESS:
-            // e.g., reset filter
+
             break;
         default:
             break;
