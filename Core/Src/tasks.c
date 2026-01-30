@@ -5,15 +5,16 @@
  *      Author: dwask
  */
 
-#include "stdio.h"
+#include <stdio.h>
 #include "tasks.h"
 #include "scheduler.h"
 #include "main.h"  // For GPIO or other shared symbols
 #include "buttons.h"
 #include "display.h"
+#include "ui.h"
 
 extern volatile bool is_sequencer_on;
-extern volatile uint8_t channel_range;
+//extern volatile uint8_t channel_range;
 
 char printBuffer[30];
 
@@ -34,17 +35,20 @@ void read_encoders(void)
 	int16_t delta1 = (int16_t)(encoder1_current_value - encoder1_previous_value);
 	if (0 != delta1)
 	{
-		channel_range = (uint8_t)encoder1_current_value % 8;
-		if(0 == channel_range)
-			channel_range = 1;
-		sprintf(printBuffer, "%-3d", channel_range);
-		display_string_to_status_line(printBuffer, ENCODER1_POSITION);
+//		channel_range = (uint8_t)encoder1_current_value % 8;
+//		if(0 == channel_range)
+//			channel_range = 1;
+//		sprintf(printBuffer, "%-3d", channel_range);
+//		display_string_to_status_line(printBuffer, ENCODER1_POSITION);
+		handle_right_encoder(encoder1_current_value, delta1);
 		encoder1_previous_value = encoder1_current_value;
 	}
 
 	int16_t delta2 = (int16_t)(encoder2_current_value - encoder2_previous_value);
 	if (0 != delta2)
 	{
+//		display_string_to_status_line(menuNames[encoder2_previous_value + delta2], ENCODER1_POSITION);
+		handle_left_encoder(encoder2_current_value, delta2);
 		encoder2_previous_value = encoder2_current_value;
 	}
 }
@@ -75,14 +79,18 @@ static void poll_buttons(void) {
 
     switch (button_get_event(BUTTON_2)) {
         case BUTTON_EVENT_SHORT_PRESS:
-        	/* toggle on/off */
+        	/* toggle sequencer on/off */
         	if(is_sequencer_on)
         		is_sequencer_on = false;
         	else
         		is_sequencer_on = true;
-
-        	sprintf(printBuffer, is_sequencer_on ? "On " : "Off");
-			display_string_to_status_line(printBuffer, ENCODER2_POSITION);
+        	menuIndex = MENU_ON_OFF;
+        	ui_encoderValues.on_off = is_sequencer_on; /* ensures ui menu controls are in sync with interrupt-driven change */
+        	ui_settings.on_off = is_sequencer_on;
+        	__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.on_off);
+        	display_string_to_status_line(menuNames[MENU_ON_OFF], 0, White, false);
+        	sprintf(printBuffer, ui_settings.on_off ? "On " : "Off");
+			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true);
 
             break;
         case BUTTON_EVENT_LONG_PRESS:
@@ -97,7 +105,7 @@ static void poll_buttons(void) {
 // --- Task initialization/registration ---
 void tasks_init(void) {
     scheduler_add_task(heartbeat, 500);
-    scheduler_add_task(read_encoders, 21);
+    scheduler_add_task(read_encoders, 5);
 //    scheduler_add_task(play_sequence, 500);
     scheduler_add_task(poll_buttons, 13);
     // Add more tasks here

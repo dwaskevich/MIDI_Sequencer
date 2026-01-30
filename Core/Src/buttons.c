@@ -7,10 +7,10 @@
 
 #include "buttons.h"
 #include "stm32f1xx_hal.h"
-#include "stdio.h"
+#include <stdio.h>
 
 #define LONG_PRESS_THRESHOLD_MS 500
-#define DEBOUNCE_GUARD_MS 20
+#define DEBOUNCE_GUARD_MS 30
 
 typedef struct {
     volatile bool pressed;
