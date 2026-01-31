@@ -33,6 +33,8 @@ typedef enum {
 } eScale_t;
 
 struct uiEncoderValues {
+	int16_t  menu_encoder_previous_value;
+	int16_t  value_encoder_previous_value;
 	int16_t  on_off;
 	int16_t  scale;
 	int16_t  key;
@@ -60,7 +62,7 @@ extern const size_t menuCount;
 extern struct uiEncoderValues ui_encoderValues;
 extern struct uiSettings ui_settings;
 
-void handle_left_encoder(int16_t encoder_value, int16_t delta);
-void handle_right_encoder(int16_t encoder_value, int16_t delta);
+void handle_menu_encoder(int16_t encoder_value, int16_t delta);
+void handle_value_encoder(int16_t encoder_value, int16_t delta);
 
 #endif /* INC_UI_H_ */

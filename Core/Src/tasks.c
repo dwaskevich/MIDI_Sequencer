@@ -27,29 +27,29 @@ void heartbeat(void)
 
 void read_encoders(void)
 {
-	static int16_t encoder1_previous_value = 0, encoder2_previous_value = 0;
+//	static int16_t encoder1_previous_value = 0, encoder2_previous_value = 0;
 
-	int16_t encoder1_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim2) / 2;
-	int16_t encoder2_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim3) / 4;
+	int16_t value_encoder_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim2) / 2;
+	int16_t menu_encoder_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim3) / 4;
 
-	int16_t delta1 = (int16_t)(encoder1_current_value - encoder1_previous_value);
-	if (0 != delta1)
+	int16_t delta_value_encoder = (int16_t)(value_encoder_current_value - ui_encoderValues.value_encoder_previous_value);
+	if (0 != delta_value_encoder)
 	{
 //		channel_range = (uint8_t)encoder1_current_value % 8;
 //		if(0 == channel_range)
 //			channel_range = 1;
 //		sprintf(printBuffer, "%-3d", channel_range);
 //		display_string_to_status_line(printBuffer, ENCODER1_POSITION);
-		handle_right_encoder(encoder1_current_value, delta1);
-		encoder1_previous_value = encoder1_current_value;
+		handle_value_encoder(value_encoder_current_value, delta_value_encoder);
+		ui_encoderValues.value_encoder_previous_value = value_encoder_current_value;
 	}
 
-	int16_t delta2 = (int16_t)(encoder2_current_value - encoder2_previous_value);
-	if (0 != delta2)
+	int16_t delta_menu_encoder = (int16_t)(menu_encoder_current_value - ui_encoderValues.menu_encoder_previous_value);
+	if (0 != delta_menu_encoder)
 	{
 //		display_string_to_status_line(menuNames[encoder2_previous_value + delta2], ENCODER1_POSITION);
-		handle_left_encoder(encoder2_current_value, delta2);
-		encoder2_previous_value = encoder2_current_value;
+		handle_menu_encoder(menu_encoder_current_value, delta_menu_encoder);
+		ui_encoderValues.menu_encoder_previous_value = menu_encoder_current_value;
 	}
 }
 

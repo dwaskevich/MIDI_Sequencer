@@ -30,7 +30,7 @@ extern volatile bool is_sequencer_on;
 extern volatile uint8_t channel_range;
 extern volatile uint16_t tempo;
 
-void handle_left_encoder(int16_t encoder_value, int16_t delta)
+void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 {
 	char printBuffer[80];
     menuIndex += delta;
@@ -51,6 +51,7 @@ void handle_left_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 		case MENU_SCALE:
+			ui_encoderValues.menu_encoder_previous_value = ui_encoderValues.scale;
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.scale); /* restore selection encoder to previous counter value (prevents jumping) */
 //			sprintf(printBuffer, ui_settings.scale ? "Minor" : "Major");
 			sprintf(printBuffer, "%s %d", (ui_settings.scale ? "Minor" : "Major"), ui_encoderValues.scale);
@@ -89,7 +90,7 @@ void handle_left_encoder(int16_t encoder_value, int16_t delta)
 	}
 }
 
-void handle_right_encoder(int16_t encoder_value, int16_t delta)
+void handle_value_encoder(int16_t encoder_value, int16_t delta)
 {
 	char printBuffer[80];
 	switch (menuIndex) {
