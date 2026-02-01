@@ -66,7 +66,7 @@ void display_start_screen(void)
   display_clear_screen(Black);
   ssd1306_Line(0, DISPLAY_DEFAULT_FONT.height, SSD1306_WIDTH, DISPLAY_DEFAULT_FONT.height, White);
   display_string_to_status_line("Seq On/Off", 0, White, false);
-  display_string_to_status_line(">", 10, White, false);
+  display_string_to_status_line(">", 11, White, false);
   display_string_to_status_line("Off", RIGHT_ENCODER_POSITION, White, true);
 }
 
@@ -92,14 +92,7 @@ int16_t display_string(const char *str, uint8_t line_number, uint8_t cursor_posi
 
 int16_t display_string_to_status_line(const char *str, uint8_t position, SSD1306_COLOR color, bool ceol_flag)
 {
-////	display_string(str, STATUS_LINE_LINE_NUMBER, position, White, false);
-//	ssd1306_SetCursor(position * DISPLAY_DEFAULT_FONT.width, STATUS_LINE_LINE_NUMBER * line_height);
-//	ssd1306_WriteString((char *)str, DISPLAY_DEFAULT_FONT, White);
-
-//	uint8_t x_position = position * DISPLAY_DEFAULT_FONT.width;
 	uint8_t cursor_end_position = position + strlen(str);
-//	if(str == NULL || cursor_end_position > chars_per_line)
-//		return -1;
 	ssd1306_SetCursor(position * DISPLAY_DEFAULT_FONT.width, STATUS_LINE_LINE_NUMBER * line_height);
 	ssd1306_WriteString((char *)str, DISPLAY_DEFAULT_FONT, color);
 	if(true == ceol_flag)

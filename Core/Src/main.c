@@ -96,27 +96,6 @@ const uint8_t c_major_scale[] = {
 	84  // C6
 };
 
-//// C major scale starting from C2 (Middle C ... i.e. C4 ... = MIDI note 60)
-//const uint8_t c_major_scale[] = {
-//	21, // A-1
-//	23, // B-1
-//	24, // C0
-//	26, // D0
-//	28, // E0
-//	29, // F0
-//	31, // G0
-//	33, // A0
-//	35, // B0
-//    36, // C1
-//    38, // D1
-//    40, // E1
-//    41, // F1
-//    43, // G1
-//    45, // A1
-//    47, // B1
-//    48, // C2
-//};
-
 uint8_t midi_note_packet[3];
 static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
 
@@ -206,10 +185,6 @@ int main(void)
 
   HAL_Delay(1000);
 
-  display_clear_screen(Black);
-  for (size_t i = 0; i < menuCount; i++) { display_string(menuNames[i], i, 0, White, true); }
-  HAL_Delay(1500);
-
   /* initialize OLED display and paint opening UI screens */
   display_start_screen();
 
@@ -242,7 +217,7 @@ int main(void)
 		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
 			  ;
 		  previous_note = note;
-		  midiSendNoteOn(note, randomize(0, ui_settings.channel), randomize(20, 120));
+		  midiSendNoteOn(note, randomize(ui_settings.channel_low, ui_settings.channel_high), randomize(20, 120));
 		  tim4_counter = 0;
 		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
 		  HAL_TIM_Base_Start_IT(&htim4);

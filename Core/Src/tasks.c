@@ -19,7 +19,18 @@ char printBuffer[30];
 
 void heartbeat(void)
 {
+	static uint16_t heartbeat_counter = 0;
+
 	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+
+	if(true == ui_heartbeat_display_update_flag)
+	{
+		if(heartbeat_counter % 2)
+			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+		else
+			display_string_to_status_line(ui_display_buffer_b, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+	}
+	heartbeat_counter++;
 }
 
 void read_encoders(void)
@@ -44,27 +55,34 @@ void read_encoders(void)
 	int16_t delta_menu_encoder = (int16_t)(menu_encoder_current_value - ui_encoderValues.menu_encoder_previous_value);
 	if (0 != delta_menu_encoder)
 	{
+		ui_heartbeat_display_update_flag = false;
 		ui_encoderValues.menu_encoder_previous_value = menu_encoder_current_value;
 		handle_menu_encoder(menu_encoder_current_value, delta_menu_encoder);
 	}
 }
-
-//void play_sequence(void)
-//{
-//	uint8_t previous_note = 0;
-//	uint8_t note;
-//	while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
-//		;
-//	previous_note = note;
-//	midiSendNoteOn(note, 4, 80);
-//}
 
 static void poll_buttons(void) {
     button_poll();
 
     switch (button_get_event(BUTTON_1)) {
         case BUTTON_EVENT_SHORT_PRESS:
+        	ui_primary_secondary_value_flag = !ui_primary_secondary_value_flag;
+        	switch (menuIndex) {
+        		case MENU_OCTAVE_RANGE:
+        			handle_value_encoder(0, 0);
+        			break;
 
+        		case MENU_CHANNEL:
+        			if(false == ui_primary_secondary_value_flag)
+        			{
+        				handle_value_encoder(ui_encoderValues.channel_low, 0);
+        			}
+        			else
+        			{
+        				handle_value_encoder(ui_encoderValues.channel_high, 0);
+        			}
+        			break;
+        	}
             break;
         case BUTTON_EVENT_LONG_PRESS:
 
@@ -75,6 +93,7 @@ static void poll_buttons(void) {
 
     switch (button_get_event(BUTTON_2)) {
         case BUTTON_EVENT_SHORT_PRESS:
+        	ui_heartbeat_display_update_flag = false;
         	/* toggle sequencer on/off */
         	if(ui_settings.on_off)
         		ui_settings.on_off = 0;
@@ -98,9 +117,8 @@ static void poll_buttons(void) {
 
 // --- Task initialization/registration ---
 void tasks_init(void) {
-    scheduler_add_task(heartbeat, 500);
+    scheduler_add_task(heartbeat, 200);
     scheduler_add_task(read_encoders, 11);
-//    scheduler_add_task(play_sequence, 500);
     scheduler_add_task(poll_buttons, 13);
     // Add more tasks here
 }

@@ -13,14 +13,6 @@
 #include <stddef.h>
 
 typedef enum {
-	UI_STATE_SEQUENCER_ACTIVE,
-	UI_STATE_MENU_SELECT,
-	UI_STATE_CONFIGURE_ITEM,
-	UI_STATE_CONFIRM_SETTING,
-	UI_STATE_HANDLE_ERROR
-} ui_state_t;
-
-typedef enum {
 #define X(name, str) MENU_##name,
 #include "ui_menu_def.h"
 #undef X
@@ -40,8 +32,10 @@ struct uiEncoderValues {
 	int16_t  key;
 	int16_t  tempo;
 	int16_t  humanize;
-	int16_t  octave_range;
-	int16_t  channel;
+	int16_t  octave_range_low;
+	int16_t  octave_range_high;
+	int16_t  channel_low;
+	int16_t  channel_high;
 };
 
 struct uiSettings {
@@ -50,18 +44,25 @@ struct uiSettings {
 	uint16_t  key;
 	uint16_t  tempo_bpm;
 	uint16_t  humanize;
-	uint16_t  octave_range;
-	uint16_t  channel;
+	uint16_t  octave_low;
+	uint16_t  octave_high;
+	int16_t   channel_low;
+	int16_t   channel_high;
 };
 
 extern int16_t menuIndex;
-extern ui_state_t ui_state;
 extern const char *menuNames[];
 extern const size_t menuCount;
 
 extern struct uiEncoderValues ui_encoderValues;
 extern bool value_encoder_ignore_next;
 extern struct uiSettings ui_settings;
+
+extern bool ui_heartbeat_display_update_flag;
+extern bool ui_primary_secondary_value_flag;
+
+extern char ui_display_buffer_a[16];
+extern char ui_display_buffer_b[16];
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta);
 void handle_value_encoder(int16_t encoder_value, int16_t delta);
