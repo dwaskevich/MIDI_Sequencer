@@ -37,15 +37,15 @@ void read_encoders(void)
 	int16_t delta_value_encoder = (int16_t)(value_encoder_current_value - ui_encoderValues.value_encoder_previous_value);
 	if (0 != delta_value_encoder)
 	{
-		handle_value_encoder(value_encoder_current_value, delta_value_encoder);
 		ui_encoderValues.value_encoder_previous_value = value_encoder_current_value;
+		handle_value_encoder(value_encoder_current_value, delta_value_encoder);
 	}
 
 	int16_t delta_menu_encoder = (int16_t)(menu_encoder_current_value - ui_encoderValues.menu_encoder_previous_value);
 	if (0 != delta_menu_encoder)
 	{
-		handle_menu_encoder(menu_encoder_current_value, delta_menu_encoder);
 		ui_encoderValues.menu_encoder_previous_value = menu_encoder_current_value;
+		handle_menu_encoder(menu_encoder_current_value, delta_menu_encoder);
 	}
 }
 

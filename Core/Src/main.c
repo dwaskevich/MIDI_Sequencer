@@ -119,8 +119,6 @@ const uint8_t c_major_scale[] = {
 
 uint8_t midi_note_packet[3];
 static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
-volatile uint8_t channel_range = 1;
-volatile uint16_t tempo = 300;
 
 /* USER CODE END PV */
 
@@ -244,11 +242,9 @@ int main(void)
 		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
 			  ;
 		  previous_note = note;
-		  midiSendNoteOn(note, randomize(0, channel_range), randomize(20, 120));
+		  midiSendNoteOn(note, randomize(0, ui_settings.channel), randomize(20, 120));
 		  tim4_counter = 0;
-//		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(300, 800));
-//		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(tempo, tempo + 500));
-		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(tempo, (uint16_t)tempo*2.67));
+		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
 		  HAL_TIM_Base_Start_IT(&htim4);
 
 		  if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */

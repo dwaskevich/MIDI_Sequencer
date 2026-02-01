@@ -20,12 +20,10 @@ const char *menuNames[] = {
 
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false;
-struct uiSettings ui_settings = {0, MAJOR, 0, 200, 167, 0, 1};
+struct uiSettings ui_settings = {0, MAJOR, 0, 300, 167, 0, 1};
 
 const size_t menuCount = sizeof(menuNames) / sizeof(menuNames[0]);
 int16_t menuIndex = 0;
-extern volatile uint8_t channel_range;
-extern volatile uint16_t tempo;
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 {
@@ -64,7 +62,7 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_TEMPO:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.tempo); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.tempo; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "x%d/%d", tempo, (uint16_t)(tempo*2.67));
+			sprintf(printBuffer, "x%d/%d", ui_settings.tempo_bpm, (uint16_t)(ui_settings.tempo_bpm*2.67));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
@@ -85,7 +83,7 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_CHANNEL:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.channel); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.channel; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "x%d", channel_range);
+			sprintf(printBuffer, "x%d", ui_settings.channel);
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 
 			break;
@@ -121,16 +119,16 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 	    case MENU_TEMPO:
-	    	tempo += delta * 100;
-	    	if(tempo < 100)
+	    	ui_settings.tempo_bpm += delta * 100;
+	    	if(ui_settings.tempo_bpm < 100)
 	    	{
-	    		tempo = 100;
+	    		ui_settings.tempo_bpm = 100;
 	    	}
-	    	if(tempo > 1500)
+	    	if(ui_settings.tempo_bpm > 1500)
 	    	{
-	    		tempo = 1500;
+	    		ui_settings.tempo_bpm = 1500;
 	    	}
-	    	ui_settings.tempo_bpm = tempo; /* update ui settings for this menu item */
+	    	ui_settings.tempo_bpm = ui_settings.tempo_bpm; /* update ui settings for this menu item */
 	    	ui_encoderValues.tempo = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm, (uint16_t)(ui_settings.tempo_bpm*2.67));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
@@ -151,10 +149,10 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 	    case MENU_CHANNEL:
-			channel_range = (uint8_t)encoder_value % 8;
-			if(0 == channel_range)
-				channel_range = 1;
-			ui_settings.channel = channel_range; /* update ui settings for this menu item */
+			ui_settings.channel = (uint8_t)encoder_value % 8;
+			if(0 == ui_settings.channel)
+				ui_settings.channel = 1;
+			ui_settings.channel = ui_settings.channel; /* update ui settings for this menu item */
 			ui_encoderValues.channel = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 			sprintf(printBuffer, "%d", ui_settings.channel);
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
