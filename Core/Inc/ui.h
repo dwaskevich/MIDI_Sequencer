@@ -8,7 +8,7 @@
 #ifndef INC_UI_H_
 #define INC_UI_H_
 
-//#include "stdbool.h"
+#include "stdbool.h"
 #include "stdint.h"
 #include <stddef.h>
 
@@ -60,6 +60,7 @@ extern const char *menuNames[];
 extern const size_t menuCount;
 
 extern struct uiEncoderValues ui_encoderValues;
+extern bool value_encoder_ignore_next;
 extern struct uiSettings ui_settings;
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta);

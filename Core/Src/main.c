@@ -119,7 +119,6 @@ const uint8_t c_major_scale[] = {
 
 uint8_t midi_note_packet[3];
 static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
-volatile bool is_sequencer_on = false;
 volatile uint8_t channel_range = 1;
 volatile uint16_t tempo = 300;
 
@@ -239,7 +238,7 @@ int main(void)
   {
 	  uint8_t note;
 	  static uint8_t previous_note = 0;
-	  if(true == is_sequencer_on && 0 != tim4_counter)
+	  if(true == ui_settings.on_off && 0 != tim4_counter)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim4, 0);
 		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
