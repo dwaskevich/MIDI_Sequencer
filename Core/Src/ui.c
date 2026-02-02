@@ -123,7 +123,6 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    		new_mode = MODE_COUNT - 1;
 	    	ui_settings.mode = new_mode; /* update ui settings for this menu item */
 	    	ui_encoderValues.mode = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-//	    	sprintf(printBuffer, ui_settings.scale ? "Minor" : "Major");
 	    	display_string_to_status_line(mode_display_names[ui_settings.mode], RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 	    	scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;

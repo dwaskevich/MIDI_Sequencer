@@ -25,3 +25,6 @@ X(BLUES,      "Blues",      6, 3,2,1,1,3,2, 0,0)
 X(WHOLE_TONE, "WholeTon",   6, 2,2,2,2,2,2, 0,0)
 
 X(HARM_MINOR, "Harm Min",   7, 2,1,2,2,1,3,1, 0)
+
+X(MELODIC_MIN, "Melod Min", 7, 2,1,2,2,2,2,1, 0)
+

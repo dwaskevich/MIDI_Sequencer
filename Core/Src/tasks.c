@@ -42,7 +42,7 @@ void read_encoders(void)
 	{
 		ui_encoderValues.value_encoder_previous_value = value_encoder_current_value;
 	    value_encoder_ignore_next = false;
-	    return;   // skip delta processing once
+	    return;   /* skip delta processing once ... prevents unwanted "false detection" of value_encoder movement */
 	}
 
 	int16_t delta_value_encoder = (int16_t)(value_encoder_current_value - ui_encoderValues.value_encoder_previous_value);

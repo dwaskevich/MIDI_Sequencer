@@ -214,10 +214,10 @@ int main(void)
 		  ui_settings.octave_low,
 		  ui_settings.octave_high,
 		  scale_notes,
-		  128);
+		  sizeof(scale_notes));
 
+  /* confirm note list (print to console) */
   printf("Number of notes = %d\r\n", scale_length);
-
   for(uint8_t i = 0; i < scale_length; i++)
   {
 	  printf("%d, ", scale_notes[i]);
