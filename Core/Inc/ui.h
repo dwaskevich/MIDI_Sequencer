@@ -41,6 +41,7 @@ struct uiEncoderValues {
 	int16_t  octave_range_high;
 	int16_t  channel_low;
 	int16_t  channel_high;
+	int16_t  presets;
 };
 
 struct uiSettings {
@@ -53,6 +54,7 @@ struct uiSettings {
 	uint16_t  octave_high;
 	int16_t   channel_low;
 	int16_t   channel_high;
+	int16_t   presets;
 };
 
 extern int16_t menuIndex;

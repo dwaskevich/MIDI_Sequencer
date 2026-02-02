@@ -11,6 +11,8 @@
 #include "display.h"
 #include "notes.h"
 #include "modes.h"
+#include "presets.h"
+#include "notes.h"
 
 #define X(name, str) str,
 const char *menuNames[] = {
@@ -24,7 +26,7 @@ const char *menuNames[] = {
 
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false;
-struct uiSettings ui_settings = {OFF, MAJOR, NOTE_C, 300, 167, 2, 4, 1, 1};
+struct uiSettings ui_settings = {OFF, MAJOR, NOTE_C, 300, 167, 2, 4, 1, 1, 0};
 bool ui_heartbeat_display_update_flag = false;
 bool ui_primary_secondary_value_flag = false;
 
@@ -82,7 +84,7 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 		case MENU_OCTAVE_RANGE:
-			ui_primary_secondary_value_flag = false;
+			ui_primary_secondary_value_flag = false; /* this menu has multi-value selection, clear primary/secondary flag */
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.octave_range_low); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.octave_range_low; /* save/record previous value for use in tasks.c delta calculation */
 			sprintf(ui_display_buffer_a, "%d / %d", ui_settings.octave_low, ui_settings.octave_high);
@@ -91,12 +93,18 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 		case MENU_CHANNEL:
-			ui_primary_secondary_value_flag = false;
+			ui_primary_secondary_value_flag = false; /* this menu has multi-value selection, clear primary/secondary flag */
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.channel_low); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.channel_low; /* save/record previous value for use in tasks.c delta calculation */
 			sprintf(ui_display_buffer_a, "%d / %d", ui_settings.channel_low, ui_settings.channel_high);
 			sprintf(ui_display_buffer_b, "  / %d", ui_settings.channel_high);
 			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			break;
+
+		case MENU_PRESETS:
+			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.presets); /* restore value selection encoder to previous counter value (prevents jumping) */
+			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.presets; /* save/record previous value for use in tasks.c delta calculation */
+			display_string_to_status_line(presets_display_names[ui_settings.presets], RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
 		default:
@@ -124,6 +132,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	ui_settings.mode = new_mode; /* update ui settings for this menu item */
 	    	ui_encoderValues.mode = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 	    	display_string_to_status_line(mode_display_names[ui_settings.mode], RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+	    	/* build new note selection list */
 	    	scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 
@@ -133,6 +142,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	ui_encoderValues.key = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 	    	sprintf(printBuffer, "%s / %d", note_to_string(ui_settings.key), ui_settings.key);
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true);
+			/* build new note selection list */
 			scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 
@@ -191,6 +201,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 				sprintf(ui_display_buffer_a, "%d / %d", ui_settings.octave_low, ui_settings.octave_high);
 				sprintf(ui_display_buffer_b, "%d /", ui_settings.octave_low);
 	    	}
+	    	/* build new note selection list */
 	    	scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 
@@ -227,6 +238,62 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 				sprintf(ui_display_buffer_b, "%d /", ui_settings.channel_low);
 			}
 	        break;
+
+	    case MENU_PRESETS:
+				ui_settings.presets += delta;
+				if(ui_settings.presets >= presets_count)
+					ui_settings.presets = presets_count - 1;
+				else if(ui_settings.presets <= 0)
+					ui_settings.presets = 0;
+				ui_encoderValues.presets = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+				display_string_to_status_line(presets_display_names[ui_settings.presets], RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+
+				switch(ui_settings.presets) {
+					case PEACEFUL:
+						ui_settings.key = NOTE_C;
+						ui_settings.mode = MODE_IONIAN;
+						ui_settings.octave_low = 2;
+						ui_settings.octave_high = 6;
+						printf("PEACEFUL - ");
+						/* build new note selection list */
+						scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
+						break;
+
+					case MELODIC:
+						ui_settings.key = NOTE_A;
+						ui_settings.mode = MODE_MELODIC_MIN;
+						ui_settings.octave_low = 3;
+						ui_settings.octave_high = 5;
+						printf("MELODIC - ");
+						/* build new note selection list */
+						scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
+						break;
+
+					case GRITTY:
+						ui_settings.key = NOTE_A;
+						ui_settings.mode = MODE_BLUES;
+						ui_settings.octave_low = 2;
+						ui_settings.octave_high = 5;
+						printf("GRITTY - ");
+						/* build new note selection list */
+						scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
+						break;
+
+					case CINEMATIC:
+						ui_settings.key = NOTE_A;
+						ui_settings.mode = MODE_HARM_MINOR;
+						ui_settings.octave_low = 3;
+						ui_settings.octave_high = 5;
+						printf("CINEMATIC - ");
+						/* build new note selection list */
+						scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
+						break;
+
+					default:
+						break;
+				}
+
+				break;
 
 	    default:
 	    	break;}

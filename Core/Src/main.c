@@ -203,7 +203,7 @@ int main(void)
 
   printf("UART started ....\r\n");
 
-  srand(HAL_GetTick()); // Seed with system tick
+  srand(HAL_GetTick()); /* seed random generator with system tick */
 
   HAL_TIM_Base_Start_IT(&htim4);
 
