@@ -29,6 +29,7 @@
 #include "midi.h"
 #include "ui.h"
 #include "notes.h"
+#include "modes.h"
 
 /* USER CODE END Includes */
 
@@ -208,7 +209,8 @@ int main(void)
 
   /* initialize note universe */
   scale_length = build_scale(ui_settings.key,
-		  (ui_settings.scale == MAJOR) ? major_intervals : minor_intervals,
+		  mode_intervals[ui_settings.mode],
+		  mode_interval_count[ui_settings.mode],
 		  ui_settings.octave_low,
 		  ui_settings.octave_high,
 		  scale_notes,

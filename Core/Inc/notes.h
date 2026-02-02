@@ -24,6 +24,7 @@ extern const uint8_t minor_intervals[7];
 
 int16_t build_scale(uint8_t root_midi_note,
                 const uint8_t *semitone_interval,
+				uint8_t interval_count,
                 uint8_t octave_low,
                 uint8_t octave_high,
                 uint8_t *output_note_array,
