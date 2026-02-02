@@ -39,6 +39,9 @@ extern "C" {
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 
+extern uint8_t scale_notes[128];
+extern uint16_t scale_length;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

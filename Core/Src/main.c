@@ -28,6 +28,7 @@
 #include "tasks.h"
 #include "midi.h"
 #include "ui.h"
+#include "notes.h"
 
 /* USER CODE END Includes */
 
@@ -64,40 +65,42 @@ volatile uint32_t ms_counter = 0;
 volatile uint16_t tim4_counter = 0;
 
 // C major scale starting from C2 (Middle C ... i.e. C4 ... = MIDI note 60)
-const uint8_t c_major_scale[] = {
-	36, // C2
-	38, // D2
-	40, // E2
-	41, // F2
-	43, // G2
-	45, // A2
-	47, // B2
-	48, // C3
-	50, // D3
-	52, // E3
-	53, // F3
-	55, // G3
-	57, // A3
-	59, // B3
-    60, // C4
-    62, // D4
-    64, // E4
-    65, // F4
-    67, // G4
-    69, // A4
-    71, // B4
-    72, // C5
-	74, // D5
-	76, // E5
-	77, // F5
-	79, // G5
-	81, // A5
-	83, // B5
-	84  // C6
-};
+//const uint8_t c_major_scale[] = {
+//	36, // C2
+//	38, // D2
+//	40, // E2
+//	41, // F2
+//	43, // G2
+//	45, // A2
+//	47, // B2
+//	48, // C3
+//	50, // D3
+//	52, // E3
+//	53, // F3
+//	55, // G3
+//	57, // A3
+//	59, // B3
+//	60, // C4
+//	62, // D4
+//	64, // E4
+//	65, // F4
+//	67, // G4
+//	69, // A4
+//	71, // B4
+//	72, // C5
+//	74, // D5
+//	76, // E5
+//	77, // F5
+//	79, // G5
+//	81, // A5
+//	83, // B5
+//	84  // C6
+//};
 
 uint8_t midi_note_packet[3];
 static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
+uint8_t scale_notes[128] = {0}; /* dynamic selection list of notes for randomizer, built by build_scale in notes.c */
+uint16_t scale_length = 0; /* dynamic length of selection list (size returned by build_scale) */
 
 /* USER CODE END PV */
 
@@ -203,6 +206,22 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim4);
 
+  /* initialize note universe */
+  scale_length = build_scale(ui_settings.key,
+		  (ui_settings.scale == MAJOR) ? major_intervals : minor_intervals,
+		  ui_settings.octave_low,
+		  ui_settings.octave_high,
+		  scale_notes,
+		  128);
+
+  printf("Number of notes = %d\r\n", scale_length);
+
+  for(uint8_t i = 0; i < scale_length; i++)
+  {
+	  printf("%d, ", scale_notes[i]);
+  }
+  printf("\r\n");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -214,7 +233,7 @@ int main(void)
 	  if(true == ui_settings.on_off && 0 != tim4_counter)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim4, 0);
-		  while(previous_note == (note = c_major_scale[randomize(0, sizeof(c_major_scale)/sizeof(c_major_scale[0]) - 1)]))
+		  while(previous_note == (note = scale_notes[randomize(0, scale_length - 1)]))
 			  ;
 		  previous_note = note;
 		  midiSendNoteOn(note, randomize(ui_settings.channel_low, ui_settings.channel_high), randomize(20, 120));

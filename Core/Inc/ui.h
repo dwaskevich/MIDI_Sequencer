@@ -24,6 +24,11 @@ typedef enum {
 	MINOR
 } eScale_t;
 
+enum {
+	OFF,
+	ON
+};
+
 struct uiEncoderValues {
 	int16_t  menu_encoder_previous_value;
 	int16_t  value_encoder_previous_value;

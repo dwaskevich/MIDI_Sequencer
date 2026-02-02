@@ -9,6 +9,7 @@
 #include "main.h"
 #include "ui.h"
 #include "display.h"
+#include "notes.h"
 
 #define X(name, str) str,
 const char *menuNames[] = {
@@ -22,7 +23,7 @@ const char *menuNames[] = {
 
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false;
-struct uiSettings ui_settings = {0, MAJOR, 0, 300, 167, 2, 6, 1, 1};
+struct uiSettings ui_settings = {OFF, MAJOR, NOTE_C, 300, 167, 2, 4, 1, 1};
 bool ui_heartbeat_display_update_flag = false;
 bool ui_primary_secondary_value_flag = false;
 
@@ -62,8 +63,7 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_KEY:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.key); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.key; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d", ui_settings.key);
-			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			display_string_to_status_line(note_to_string(ui_settings.key), RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
 		case MENU_TEMPO:
@@ -119,13 +119,16 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	ui_encoderValues.scale = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 	    	sprintf(printBuffer, ui_settings.scale ? "Minor" : "Major");
 	    	display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+	    	scale_length = build_scale(ui_settings.key, (ui_settings.scale == MAJOR) ? major_intervals : minor_intervals, ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 
 	    case MENU_KEY:
-	    	ui_settings.key = encoder_value; /* update ui settings for this menu item */
+	    	ui_settings.key += delta; /* update ui settings for this menu item */
+	    	ui_settings.key = ui_settings.key % 12;
 	    	ui_encoderValues.key = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-	    	sprintf(printBuffer, "%d", ui_settings.key);
-			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+	    	sprintf(printBuffer, "%s / %d", note_to_string(ui_settings.key), ui_settings.key);
+			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true);
+			scale_length = build_scale(ui_settings.key, (ui_settings.scale == MAJOR) ? major_intervals : minor_intervals, ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 
 	    case MENU_TEMPO:
@@ -160,9 +163,9 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    		{
 	    			ui_settings.octave_low = MIDI_OCTAVE_LOW;
 	    		}
-	    		if(ui_settings.octave_low >= ui_settings.octave_high)
+	    		if(ui_settings.octave_low >= ui_settings.octave_high - 1)
 	    		{
-	    			ui_settings.octave_low = ui_settings.octave_high;
+	    			ui_settings.octave_low = ui_settings.octave_high - 1;
 	    		}
 				ui_encoderValues.octave_range_low = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 				sprintf(ui_display_buffer_a, "%d / %d", ui_settings.octave_low, ui_settings.octave_high);
@@ -175,14 +178,15 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    		{
 					ui_settings.octave_high = MIDI_OCTAVE_HIGH;
 	    		}
-				if(ui_settings.octave_high <= ui_settings.octave_low)
+				if(ui_settings.octave_high <= ui_settings.octave_low + 1)
 				{
-					ui_settings.octave_high = ui_settings.octave_low;
+					ui_settings.octave_high = ui_settings.octave_low + 1;
 				}
 				ui_encoderValues.octave_range_high = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 				sprintf(ui_display_buffer_a, "%d / %d", ui_settings.octave_low, ui_settings.octave_high);
 				sprintf(ui_display_buffer_b, "%d /", ui_settings.octave_low);
 	    	}
+	    	scale_length = build_scale(ui_settings.key, (ui_settings.scale == MAJOR) ? major_intervals : minor_intervals, ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 
 	    case MENU_CHANNEL:
