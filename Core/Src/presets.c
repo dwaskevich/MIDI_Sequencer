@@ -7,8 +7,17 @@
 
 #include "presets.h"
 
-const char *presets_display_names[] = {"Peaceful", "Melodic", "Gritty", "Cinematic"};
+#define X(name, display, key, mode, low, high) \
+    { display, key, mode, low, high },
 
-const uint16_t presets_count = sizeof(presets_display_names)/sizeof(presets_display_names[0]);
+const preset_t presets[] = {
+#include "presets_def.h"
+};
+#undef X
+
+//
+//const char *presets_display_names[] = {"Peaceful", "Melodic", "Gritty", "Cinematic"};
+//
+//const uint16_t presets_count = sizeof(presets_display_names)/sizeof(presets_display_names[0]);
 
 

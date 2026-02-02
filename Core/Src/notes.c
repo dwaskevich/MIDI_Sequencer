@@ -51,7 +51,7 @@ int16_t build_scale(uint8_t pitch_class,
         uint8_t interval = semitone_interval[(count - 1) % interval_count]; /* modulo automatically circles back to beginning of semitone sequence array */
         note += interval; /* advance note by referenced number of semitones (i.e. full-step or half-step) */
     }
-    printf(" - #notes = %d\r\n", count);
+    printf(" - #notes = %d.\r\n", count);
 
     return count; /* number of notes generated ... use return value for traversing the note list array */
 }
