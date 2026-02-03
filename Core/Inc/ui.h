@@ -33,6 +33,7 @@ struct uiEncoderValues {
 	int16_t  menu_encoder_previous_value;
 	int16_t  value_encoder_previous_value;
 	int16_t  on_off;
+	int16_t  chords;
 	int16_t  mode;
 	int16_t  key;
 	int16_t  tempo;
@@ -46,6 +47,7 @@ struct uiEncoderValues {
 
 struct uiSettings {
 	uint16_t  on_off;
+	uint16_t  chords;
 	uint16_t  mode;
 	uint16_t  key;
 	uint16_t  tempo_bpm;

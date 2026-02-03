@@ -26,7 +26,7 @@ const char *menuNames[] = {
 
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false;
-struct uiSettings ui_settings = {OFF, PRESET_PEACEFUL, NOTE_C, 300, 167, 2, 6, 1, 1, 0};
+struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 300, 167, 2, 6, 1, 1, PRESET_PEACEFUL};
 bool ui_heartbeat_display_update_flag = false;
 bool ui_primary_secondary_value_flag = false;
 
@@ -55,6 +55,12 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.on_off); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.on_off; /* save/record previous value for use in tasks.c delta calculation */
 			display_string_to_status_line(ui_settings.on_off ? "On" : "Off", RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			break;
+
+		case MENU_CHORDS:
+			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.chords); /* restore value selection encoder to previous counter value (prevents jumping) */
+			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.chords; /* save/record previous value for use in tasks.c delta calculation */
+			display_string_to_status_line(ui_settings.chords ? "Triad" : "Off", RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
 		case MENU_MODE:
@@ -123,6 +129,13 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 	        break;
 
+	    case MENU_CHORDS:
+			ui_settings.chords = encoder_value % 2; /* use encoder value to turn chord generation on or off */
+			ui_encoderValues.chords = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+			sprintf(printBuffer, "%s", (ui_settings.chords ? "Triad" : "Off"));
+			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			break;
+
 	    case MENU_MODE:
 	    	int16_t new_mode = ui_settings.mode + delta;
 	    	if(new_mode < 0)
@@ -147,7 +160,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 	    case MENU_TEMPO:
-	    	ui_settings.tempo_bpm += delta * 100;
+	    	ui_settings.tempo_bpm -= delta * 100;
 	    	if(ui_settings.tempo_bpm < 100)
 	    	{
 	    		ui_settings.tempo_bpm = 100;

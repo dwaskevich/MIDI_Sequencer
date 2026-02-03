@@ -8,6 +8,7 @@
 
 /* X-macro to define menu headings that will be used to generate enum and const char * array */
 X(ON_OFF,        "Seq On/Off ")
+X(CHORDS,        "Chords     ")
 X(PRESETS,       "Presets    ")
 X(MODE,          "Mode       ")
 X(KEY,           "Key        ")

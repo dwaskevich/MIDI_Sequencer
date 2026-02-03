@@ -15,9 +15,4 @@ const preset_t presets[] = {
 };
 #undef X
 
-//
-//const char *presets_display_names[] = {"Peaceful", "Melodic", "Gritty", "Cinematic"};
-//
-//const uint16_t presets_count = sizeof(presets_display_names)/sizeof(presets_display_names[0]);
-
 
