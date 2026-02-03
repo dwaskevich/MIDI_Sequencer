@@ -103,6 +103,17 @@ static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
 uint8_t scale_notes[128] = {0}; /* dynamic selection list of notes for randomizer, built by build_scale in notes.c */
 uint16_t scale_length = 0; /* dynamic length of selection list (size returned by build_scale) */
 
+typedef struct {
+	uint16_t note;
+	uint8_t  channel;
+	uint32_t timestamp;
+	bool     is_slot_active;
+} active_note_t;
+
+#define MAX_ACTIVE_NOTES 64
+static active_note_t active_notes[MAX_ACTIVE_NOTES] = {0};
+const uint16_t channel_note_off_duration[16] = {0, 0, 0, 2500, 0, 0, 2500, 2000, 0, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -238,17 +249,56 @@ int main(void)
 		  while(previous_note == (note = scale_notes[randomize(0, scale_length - 1)]))
 			  ;
 		  previous_note = note;
-		  midiSendNoteOn(note, randomize(ui_settings.channel_low, ui_settings.channel_high), randomize(20, 120));
+		  uint8_t channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
+		  midiSendNoteOn(note, channel, randomize(20, 120));
+		  if(channel_note_off_duration[channel] != 0)
+		  {
+			  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
+			  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+			  {
+				  if(!active_notes[i].is_slot_active)
+				  {
+					  active_notes[i].note = note;
+					  active_notes[i].channel = channel;
+					  active_notes[i].timestamp = HAL_GetTick();
+					  active_notes[i].is_slot_active = true;
+					  break;
+				  }
+			  }
+		  }
 		  tim4_counter = 0;
 		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
 		  HAL_TIM_Base_Start_IT(&htim4);
 
+		  /* manage real-time OLED display */
 		  if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
 				display_clear_page(Black);
 		  display_string(midi_process_message(midi_note_packet[0], midi_note_packet[1], midi_note_packet[2]), display_line_pointer, 0, White, true);
 		  display_line_pointer++; /* move display pointer */
 		  if(display_line_pointer > LAST_DISPLAY_LINE)
 			  display_line_pointer = FIRST_DISPLAY_LINE;
+	  }
+
+	  /* look for expiration in active_notes array */
+	  uint32_t current_tick = HAL_GetTick();
+	  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+	  {
+		  if(active_notes[i].is_slot_active)
+		  {
+			  if(current_tick - active_notes[i].timestamp > channel_note_off_duration[active_notes[i].channel])
+			  {
+				  midiSendNoteOff(active_notes[i].note, active_notes[i].channel, 0);
+				  active_notes[i].is_slot_active = false;
+
+				  /* manage display */
+				  if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
+						display_clear_page(Black);
+				  display_string(midi_process_message(midi_note_packet[0], midi_note_packet[1], midi_note_packet[2]), display_line_pointer, 0, White, true);
+				  display_line_pointer++; /* move display pointer */
+				  if(display_line_pointer > LAST_DISPLAY_LINE)
+					  display_line_pointer = FIRST_DISPLAY_LINE;
+			  }
+		  }
 	  }
 
     /* USER CODE END WHILE */
