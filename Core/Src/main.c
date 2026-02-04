@@ -288,9 +288,9 @@ int main(void)
 		  if(3 == channel) /* organ (channel 3) too loud at high velocities */
 			  velocity = randomize(20, 60);
 		  else
-			  velocity = randomize(20, 120);
+			  velocity = randomize(20, 100);
 		  midiSendNoteOn(note, channel, velocity);
-		  cacheMidiMessage();
+		  cacheMidiMessage(); /* cache current message for later display */
 		  hal_timestamp = HAL_GetTick();
 		  if(channel_note_off_duration[channel] != 0)
 		  {
@@ -312,7 +312,7 @@ int main(void)
 			  if(scale_index <= scale_length - 3)
 			  {
 				  midiSendNoteOn(scale_notes[scale_index + 2], channel, velocity);
-				  cacheMidiMessage();
+				  cacheMidiMessage(); /* cache current message for later display */
 				  if(channel_note_off_duration[channel] != 0)
 				  {
 					  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
@@ -332,7 +332,7 @@ int main(void)
 			  if(scale_index <= scale_length - 5)
 			  {
 				  midiSendNoteOn(scale_notes[scale_index + 4], channel, velocity);
-				  cacheMidiMessage();
+				  cacheMidiMessage(); /* cache current message for later display */
 				  if(channel_note_off_duration[channel] != 0)
 				  {
 					  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
@@ -365,12 +365,14 @@ int main(void)
 			  {
 				  midiSendNoteOff(active_notes[i].note, active_notes[i].channel, 0);
 				  active_notes[i].is_slot_active = false;
-				  cacheMidiMessage();
+				  cacheMidiMessage(); /* cache current message for later display */
 			  }
 		  }
 	  }
 
-	  displayMidiMessages();
+	  displayMidiMessages(); /* update display */
+
+	  /* debug/verification of display buffer utilization */
 	  if(max_display_index > previous_max)
 	  {
 		  previous_max = max_display_index;

@@ -227,9 +227,13 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 				{
 					ui_settings.channel_low = 1;
 				}
+				if(ui_settings.channel_low >= MIDI_MAX_CHANNELS)
+				{
+					ui_settings.channel_low = MIDI_MAX_CHANNELS;
+				}
 				if(ui_settings.channel_low >= ui_settings.channel_high)
 				{
-					ui_settings.channel_low = ui_settings.channel_high;
+					ui_settings.channel_high = ui_settings.channel_low; /* track channel high with channel low */
 				}
 				ui_encoderValues.channel_low = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 				sprintf(ui_display_buffer_a, "%d / %d", ui_settings.channel_low, ui_settings.channel_high);
@@ -238,9 +242,13 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			else /* modify/operate on secondary (high) value */
 			{
 				ui_settings.channel_high += delta; /* update ui settings for this menu item */
+				if(ui_settings.channel_high <= 0)
+				{
+					ui_settings.channel_high = 1;
+				}
 				if(ui_settings.channel_high <= ui_settings.channel_low)
 				{
-					ui_settings.channel_high = ui_settings.channel_low;
+					ui_settings.channel_low = ui_settings.channel_high;
 				}
 				if(ui_settings.channel_high >= MIDI_MAX_CHANNELS)
 				{
