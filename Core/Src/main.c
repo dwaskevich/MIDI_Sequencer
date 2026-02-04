@@ -110,6 +110,11 @@ typedef struct {
 	bool     is_slot_active;
 } active_note_t;
 
+#define MAX_DISPLAY_BUFFER 64
+uint8_t display_buffer[MAX_DISPLAY_BUFFER][3];
+uint8_t display_buffer_index = 0;
+uint8_t max_display_index = 0, previous_max = 0;
+
 #define MAX_ACTIVE_NOTES 64
 static active_note_t active_notes[MAX_ACTIVE_NOTES] = {0};
 const uint16_t channel_note_off_duration[16] = {0, 0, 0, 2500, 0, 0, 2500, 2000, 0, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
@@ -154,6 +159,33 @@ void midiSendNoteOff(uint8_t note, uint8_t channel, uint8_t velocity) {
 uint16_t randomize(uint16_t lower_value, uint16_t upper_value)
 {
 	return rand() % (upper_value - lower_value + 1) + lower_value;
+}
+
+void cacheMidiMessage(void)
+{
+	display_buffer[display_buffer_index][0] = midi_note_packet[0];
+	display_buffer[display_buffer_index][1] = midi_note_packet[1];
+	display_buffer[display_buffer_index][2] = midi_note_packet[2];
+	display_buffer_index++;
+	if(display_buffer_index >= MAX_DISPLAY_BUFFER)
+	  display_buffer_index = MAX_DISPLAY_BUFFER - 1;
+}
+
+void displayMidiMessages(void)
+{
+	/* manage real-time OLED display messages */
+	if(display_buffer_index > max_display_index)
+		max_display_index = display_buffer_index;
+	for(uint8_t i = 0; i < display_buffer_index; i++)
+	{
+		if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
+			display_clear_page(Black);
+		display_string(midi_process_message(display_buffer[i][0], display_buffer[i][1], display_buffer[i][2]), display_line_pointer, 0, White, true);
+		display_line_pointer++; /* move display pointer */
+		if(display_line_pointer > LAST_DISPLAY_LINE)
+			display_line_pointer = FIRST_DISPLAY_LINE;
+	}
+	display_buffer_index = 0;
 }
 
 /* USER CODE END 0 */
@@ -258,6 +290,7 @@ int main(void)
 		  else
 			  velocity = randomize(20, 120);
 		  midiSendNoteOn(note, channel, velocity);
+		  cacheMidiMessage();
 		  hal_timestamp = HAL_GetTick();
 		  if(channel_note_off_duration[channel] != 0)
 		  {
@@ -276,10 +309,10 @@ int main(void)
 		  }
 		  if(ui_settings.chords) /* add notes to complete chord sequence (Triad only at this point ... i.e. 3-note chords only) */
 		  {
-			  printf("Chords ... scale index = %d, note = %d, next two notes = %d, %d\r\n", scale_index, scale_notes[scale_index], scale_notes[scale_index + 2], scale_notes[scale_index + 4]);
 			  if(scale_index <= scale_length - 3)
 			  {
 				  midiSendNoteOn(scale_notes[scale_index + 2], channel, velocity);
+				  cacheMidiMessage();
 				  if(channel_note_off_duration[channel] != 0)
 				  {
 					  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
@@ -299,6 +332,7 @@ int main(void)
 			  if(scale_index <= scale_length - 5)
 			  {
 				  midiSendNoteOn(scale_notes[scale_index + 4], channel, velocity);
+				  cacheMidiMessage();
 				  if(channel_note_off_duration[channel] != 0)
 				  {
 					  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
@@ -319,14 +353,6 @@ int main(void)
 		  tim4_counter = 0;
 		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
 		  HAL_TIM_Base_Start_IT(&htim4);
-
-		  /* manage real-time OLED display */
-		  if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
-				display_clear_page(Black);
-		  display_string(midi_process_message(midi_note_packet[0], midi_note_packet[1], midi_note_packet[2]), display_line_pointer, 0, White, true);
-		  display_line_pointer++; /* move display pointer */
-		  if(display_line_pointer > LAST_DISPLAY_LINE)
-			  display_line_pointer = FIRST_DISPLAY_LINE;
 	  }
 
 	  /* look for expiration in active_notes array */
@@ -339,16 +365,16 @@ int main(void)
 			  {
 				  midiSendNoteOff(active_notes[i].note, active_notes[i].channel, 0);
 				  active_notes[i].is_slot_active = false;
-
-				  /* manage display */
-				  if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
-						display_clear_page(Black);
-				  display_string(midi_process_message(midi_note_packet[0], midi_note_packet[1], midi_note_packet[2]), display_line_pointer, 0, White, true);
-				  display_line_pointer++; /* move display pointer */
-				  if(display_line_pointer > LAST_DISPLAY_LINE)
-					  display_line_pointer = FIRST_DISPLAY_LINE;
+				  cacheMidiMessage();
 			  }
 		  }
+	  }
+
+	  displayMidiMessages();
+	  if(max_display_index > previous_max)
+	  {
+		  previous_max = max_display_index;
+		  printf("max_display_index = %d\r\n", max_display_index);
 	  }
 
     /* USER CODE END WHILE */
