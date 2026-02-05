@@ -15,7 +15,7 @@
 
 #define DISPLAY_DEFAULT_FONT Font_6x8
 #define ENCODER1_POSITION 17
-#define ENCODER2_POSITION 6
+#define ENCODER2_POSITION 7
 
 void display_init(void);
 void display_splash_screen(void);

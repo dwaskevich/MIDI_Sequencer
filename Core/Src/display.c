@@ -63,7 +63,7 @@ void display_clear_screen(SSD1306_COLOR color)
 void display_start_screen(void)
 {
   display_clear_screen(Black);
-  display_string_to_status_line("Tempo 0    Range 0", 0);
+  display_string_to_status_line("On/Off Off Range 1", 0);
 }
 
 int16_t display_string(char *str, uint8_t line_number, uint8_t cursor_position, SSD1306_COLOR color, bool ceol_flag)

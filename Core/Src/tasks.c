@@ -11,6 +11,9 @@
 #include "main.h"  // For GPIO or other shared symbols
 #include "display.h"
 
+extern volatile bool is_sequencer_on;
+extern volatile uint8_t channel_range;
+
 // Task implementation
 
 void heartbeat(void)
@@ -29,7 +32,11 @@ void read_encoders(void)
 	int16_t delta1 = (int16_t)(encoder1_current_value - encoder1_previous_value);
 	if (0 != delta1)
 	{
-		sprintf(printBuffer, "%-3d", encoder1_current_value);
+		channel_range = (uint8_t)encoder1_current_value % 8;
+		if(0 == channel_range)
+			channel_range = 1;
+//		sprintf(printBuffer, "%-3d", encoder1_current_value);
+		sprintf(printBuffer, "%-3d", channel_range);
 		display_string_to_status_line(printBuffer, ENCODER1_POSITION);
 		encoder1_previous_value = encoder1_current_value;
 	}
@@ -37,7 +44,9 @@ void read_encoders(void)
 	int16_t delta2 = (int16_t)(encoder2_current_value - encoder2_previous_value);
 	if (0 != delta2)
 	{
-		sprintf(printBuffer, "%-3d", encoder2_current_value);
+		is_sequencer_on = encoder2_current_value % 2;
+//		sprintf(printBuffer, "%-3d", encoder2_current_value);
+		sprintf(printBuffer, is_sequencer_on ? "On " : "Off");
 		display_string_to_status_line(printBuffer, ENCODER2_POSITION);
 		encoder2_previous_value = encoder2_current_value;
 	}
