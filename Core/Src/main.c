@@ -110,10 +110,9 @@ typedef struct {
 	bool     is_slot_active;
 } active_note_t;
 
-#define MAX_DISPLAY_BUFFER 64
+#define MAX_DISPLAY_BUFFER 12
 uint8_t display_buffer[MAX_DISPLAY_BUFFER][3];
-uint8_t display_buffer_index = 0;
-uint8_t max_display_index = 0, previous_max = 0;
+volatile uint16_t headPointer = 0, tailPointer = 0; /* FIFO head and tail pointers */
 
 #define MAX_ACTIVE_NOTES 64
 static active_note_t active_notes[MAX_ACTIVE_NOTES] = {0};
@@ -163,29 +162,36 @@ uint16_t randomize(uint16_t lower_value, uint16_t upper_value)
 
 void cacheMidiMessage(void)
 {
-	display_buffer[display_buffer_index][0] = midi_note_packet[0];
-	display_buffer[display_buffer_index][1] = midi_note_packet[1];
-	display_buffer[display_buffer_index][2] = midi_note_packet[2];
-	display_buffer_index++;
-	if(display_buffer_index >= MAX_DISPLAY_BUFFER)
-	  display_buffer_index = MAX_DISPLAY_BUFFER - 1;
+	display_buffer[headPointer][0] = midi_note_packet[0];
+	display_buffer[headPointer][1] = midi_note_packet[1];
+	display_buffer[headPointer][2] = midi_note_packet[2];
+	headPointer++;
+	if(headPointer >= MAX_DISPLAY_BUFFER) /* manage headPointer rollover (new arrivals will overwrite older) */
+		headPointer = 0;
 }
 
 void displayMidiMessages(void)
 {
-	/* manage real-time OLED display messages */
-	if(display_buffer_index > max_display_index)
-		max_display_index = display_buffer_index;
-	for(uint8_t i = 0; i < display_buffer_index; i++)
+	/* manage OLED display updates in main loop slack time */
+	for(uint8_t i = 0; i < MAX_DISPLAY_BUFFER; i++)
 	{
-		if(FIRST_DISPLAY_LINE == display_line_pointer) /* display is full, create new blank page */
-			display_clear_page(Black);
-		display_string(midi_process_message(display_buffer[i][0], display_buffer[i][1], display_buffer[i][2]), display_line_pointer, 0, White, true);
-		display_line_pointer++; /* move display pointer */
-		if(display_line_pointer > LAST_DISPLAY_LINE)
-			display_line_pointer = FIRST_DISPLAY_LINE;
+		if(1 == tim4_counter && ui_settings.on_off) /* skip display updates if TIM4 timer interrupt has fired */
+			return;
+		if(tailPointer != headPointer) /* if true, new data is available */
+		{
+			if(1 == tim4_counter && ui_settings.on_off) /* skip display updates if TIM4 timer interrupt has fired */
+				return;
+			display_string(midi_process_message(display_buffer[tailPointer][0], display_buffer[tailPointer][1], display_buffer[tailPointer][2]), display_line_pointer, 0, White, true);
+			display_line_pointer++;
+			if(display_line_pointer > LAST_DISPLAY_LINE)
+				display_line_pointer = FIRST_DISPLAY_LINE;
+			/* blank following line to visually indicate new message scrolling */
+			ssd1306_FillRectangle(0, 9*(display_line_pointer + 1) + 2, SSD1306_WIDTH, 9*(display_line_pointer + 1) + 10, Black);
+			tailPointer++; /* move display pointer */
+			if(tailPointer >= MAX_DISPLAY_BUFFER) /* manage FIFO pointer rollover */
+			  tailPointer = 0;
+		}
 	}
-	display_buffer_index = 0;
 }
 
 /* USER CODE END 0 */
@@ -280,6 +286,8 @@ int main(void)
 	  if(true == ui_settings.on_off && 0 != tim4_counter)
 	  {
 		  __HAL_TIM_SET_COUNTER(&htim4, 0);
+		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
+		  HAL_TIM_Base_Start_IT(&htim4);
 		  while(previous_note == (note = scale_notes[scale_index = randomize(0, scale_length - 1)]))
 			  ;
 		  previous_note = note;
@@ -291,10 +299,10 @@ int main(void)
 			  velocity = randomize(20, 100);
 		  midiSendNoteOn(note, channel, velocity);
 		  cacheMidiMessage(); /* cache current message for later display */
-		  hal_timestamp = HAL_GetTick();
-		  if(channel_note_off_duration[channel] != 0)
+		  hal_timestamp = HAL_GetTick(); /* record current time to evaluate note-off expirations */
+		  if(channel_note_off_duration[channel] != 0) /* log note if this channel has a note-off duration */
 		  {
-			  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
+			  /* look for open slot in active_notes array */
 			  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 			  {
 				  if(!active_notes[i].is_slot_active)
@@ -309,13 +317,13 @@ int main(void)
 		  }
 		  if(ui_settings.chords) /* add notes to complete chord sequence (Triad only at this point ... i.e. 3-note chords only) */
 		  {
-			  if(scale_index <= scale_length - 3)
+			  if(scale_index <= scale_length - 3) /* don't exceed note selection array length */
 			  {
-				  midiSendNoteOn(scale_notes[scale_index + 2], channel, velocity);
+				  midiSendNoteOn(scale_notes[scale_index + 2], channel, velocity); /* send third */
 				  cacheMidiMessage(); /* cache current message for later display */
-				  if(channel_note_off_duration[channel] != 0)
+				  if(channel_note_off_duration[channel] != 0) /* log note if this channel has a note-off duration */
 				  {
-					  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
+					  /* look for open slot in active_notes array */
 					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 					  {
 						  if(!active_notes[i].is_slot_active)
@@ -329,13 +337,13 @@ int main(void)
 					  }
 				  }
 			  }
-			  if(scale_index <= scale_length - 5)
+			  if(scale_index <= scale_length - 5) /* don't exceed note selection array length */
 			  {
-				  midiSendNoteOn(scale_notes[scale_index + 4], channel, velocity);
+				  midiSendNoteOn(scale_notes[scale_index + 4], channel, velocity); /* send fifth */
 				  cacheMidiMessage(); /* cache current message for later display */
-				  if(channel_note_off_duration[channel] != 0)
+				  if(channel_note_off_duration[channel] != 0) /* log note if this channel has a note-off duration */
 				  {
-					  /* look for open slot in active_notes array if this channel has a note off duration (i.e. not 0) */
+					  /* look for open slot in active_notes array */
 					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 					  {
 						  if(!active_notes[i].is_slot_active)
@@ -350,12 +358,10 @@ int main(void)
 				  }
 			  }
 		  }
-		  tim4_counter = 0;
-		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
-		  HAL_TIM_Base_Start_IT(&htim4);
+		  tim4_counter = 0; /* reset timer flag/counter */
 	  }
 
-	  /* look for expiration in active_notes array */
+	  /* look for expiration(s) in active_notes array */
 	  uint32_t current_tick = HAL_GetTick();
 	  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 	  {
@@ -370,14 +376,7 @@ int main(void)
 		  }
 	  }
 
-	  displayMidiMessages(); /* update display */
-
-	  /* debug/verification of display buffer utilization */
-	  if(max_display_index > previous_max)
-	  {
-		  previous_max = max_display_index;
-		  printf("max_display_index = %d\r\n", max_display_index);
-	  }
+	  displayMidiMessages(); /* update display in main loop slack/idle time */
 
     /* USER CODE END WHILE */
 
@@ -575,9 +574,9 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 64800 - 1;
+  htim4.Init.Prescaler = 36000 - 1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 500 - 1;
+  htim4.Init.Period = 1000 - 1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_OnePulse_Init(&htim4, TIM_OPMODE_SINGLE) != HAL_OK)

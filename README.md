@@ -12,6 +12,7 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 
 - **Menu-driven sequencer** via two pushbutton rotary encoders
 - **Simple main.c note generator engine** driven by TIM4 timer interrupts
+    - Supports chord triads and up to 600 BPM
 - **OLED display output** using 128 x 64, .96" SSD1306 over I2C
 - **MIDI note generation** displayed real-time on OLED display
 - **13 common modes** including 5, 6 and 7 interval sequences 
@@ -100,7 +101,7 @@ MIDI_Traffic_Monitor/
     - User LED (Blue Pill) - PC13
     - TIM4 - one-shot timer w/interrupt (adjustable) - controls MIDI note generation timing
         - One Pulse Mode
-        - Prescaler = 64800 - 1, Counter Period = adjustable for BPM note timing
+        - Prescaler = 36000 - 1, Counter Period = adjustable for BPM note timing (time in ms = 2x desired value)
     - RCC Crystal Oscillator (HSE - 8 MHz) - PD0/PD1 (default on STM32 Blue Pill)
     - Clock Configuration - HSE enabled (8 MHz), PLL 9x, SysClk = 72 MHz
     - SYSTICK Timer - default 1 ms

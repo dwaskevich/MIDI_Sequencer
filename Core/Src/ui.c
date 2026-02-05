@@ -26,7 +26,7 @@ const char *menuNames[] = {
 
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false;
-struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 300, 167, 2, 6, 1, 1, PRESET_PEACEFUL};
+struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 600, 167, 2, 6, 1, 1, PRESET_PEACEFUL};
 bool ui_heartbeat_display_update_flag = false;
 bool ui_primary_secondary_value_flag = false;
 
@@ -78,7 +78,7 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_TEMPO:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.tempo); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.tempo; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm, (uint16_t)(ui_settings.tempo_bpm*2.67));
+			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * 2.67));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
@@ -160,18 +160,18 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 	    case MENU_TEMPO:
-	    	ui_settings.tempo_bpm -= delta * 100;
-	    	if(ui_settings.tempo_bpm < 100)
+	    	ui_settings.tempo_bpm -= delta * 200;
+	    	if(ui_settings.tempo_bpm < 200)
 	    	{
-	    		ui_settings.tempo_bpm = 100;
+	    		ui_settings.tempo_bpm = 200;
 	    	}
-	    	if(ui_settings.tempo_bpm > 1500)
+	    	if(ui_settings.tempo_bpm > 3000)
 	    	{
-	    		ui_settings.tempo_bpm = 1500;
+	    		ui_settings.tempo_bpm = 3000;
 	    	}
 	    	ui_settings.tempo_bpm = ui_settings.tempo_bpm; /* update ui settings for this menu item */
 	    	ui_encoderValues.tempo = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm, (uint16_t)(ui_settings.tempo_bpm*2.67));
+			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * 2.67));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
