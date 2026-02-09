@@ -8,14 +8,14 @@
 #include <stdio.h>
 #include "tasks.h"
 #include "scheduler.h"
-#include "main.h"  // For GPIO or other shared symbols
+#include "main.h" /* needed for GPIO or other shared symbols */
 #include "buttons.h"
 #include "display.h"
 #include "ui.h"
 
 char printBuffer[30];
 
-// Task implementation
+/* task implementations */
 
 void heartbeat(void)
 {
@@ -23,12 +23,12 @@ void heartbeat(void)
 
 	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
-	if(true == ui_heartbeat_display_update_flag)
+	if(true == ui_heartbeat_display_update_flag) /* ui visual indication of which of two parameters will be adjusted by encoder */
 	{
 		if(heartbeat_counter % 2)
-			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* blink buffer a */
 		else
-			display_string_to_status_line(ui_display_buffer_b, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			display_string_to_status_line(ui_display_buffer_b, RIGHT_ENCODER_POSITION, White, true); /* blink buffer b */
 	}
 	heartbeat_counter++;
 }
@@ -38,7 +38,7 @@ void read_encoders(void)
 	int16_t value_encoder_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim2) / 2;
 	int16_t menu_encoder_current_value = (int16_t)__HAL_TIM_GET_COUNTER(&htim3) / 4;
 
-	if (true == value_encoder_ignore_next)
+	if (true == value_encoder_ignore_next) /* cosmetics ... will prevent a menu "jump" when moving between menus */
 	{
 		ui_encoderValues.value_encoder_previous_value = value_encoder_current_value;
 	    value_encoder_ignore_next = false;

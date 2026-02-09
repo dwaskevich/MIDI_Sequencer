@@ -16,7 +16,7 @@
 
 #define X(name, str) str,
 const char *menuNames[] = {
-#include "ui_menu_def.h"   // <‑‑ THIS is the include
+#include "ui_menu_def.h" /* X-Macro include */
 };
 #undef X
 
@@ -25,18 +25,22 @@ const char *menuNames[] = {
 #define MIDI_MAX_CHANNELS 16
 
 struct uiEncoderValues ui_encoderValues = {0};
-bool value_encoder_ignore_next = false;
+bool value_encoder_ignore_next = false; /* cosmetics ... will prevent a menu "jump" when moving between menus */
+
 /* ui_settings: on_off, chords,  mode,  key, tempo_bpm*2, syncopation index, octave_low, octave_high, channel_low, channel_high, presets */
 struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 600, 0, 2, 6, 1, 1, PRESET_PEACEFUL}; /* initialize ui settings */
+
+/* ui helpers ... cosmetics to indicate which value of a multi-value menu will be adjusted */
 bool ui_heartbeat_display_update_flag = false;
 bool ui_primary_secondary_value_flag = false;
-
+/* primary and secondary buffers */
 char ui_display_buffer_a[16];
 char ui_display_buffer_b[16];
 
 const size_t menuCount = sizeof(menuNames) / sizeof(menuNames[0]);
 int16_t menuIndex = 0;
 
+/* syncopation values (percentages expressed as decimal values) will be used in note generation for randomizing next note timing */
 const float syncopation_values[6] = {0, .5, 1, 1.67, 2, 2.5};
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta)

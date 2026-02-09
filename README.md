@@ -14,9 +14,10 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 - **Simple main.c note generator engine** driven by TIM4 timer interrupts
     - Supports chord triads and up to 600 BPM
 - **OLED display output** using 128 x 64, .96" SSD1306 over I2C
-- **MIDI note generation** displayed real-time on OLED display
-- **13 common modes** including 5, 6 and 7 interval sequences 
+- **MIDI note generation** cached and displayed on OLED display
+- **13 common modes** including 5, 6 and 7 interval sequences
 - **User interface with rotary encoders** enables customized settings for mode, key, octave range, tempo and channel selection
+- **User presets** defined in x-macro for easy updates/additions
 - **Console UART** for debug messaging and session monitoring
 - **MIDI Out buffering** with activity LED
 
@@ -115,7 +116,7 @@ MIDI_Traffic_Monitor/
 
 - SSD1306 OLED display:
     - 128x64 pixels, I2C interface w/on-board pullups
-    - UI design ... status line at top, main screen holds 6 MIDI records
+    - UI design ... menu line at top, main screen holds 6 MIDI records
 - MIDI Out
     - MIDI UART Tx buffered by 74LS04 Hex Inverter
         - Drives MIDI Out connector and MIDI Activity LED
@@ -135,7 +136,7 @@ MIDI_Traffic_Monitor/
     - __io_putchar() defined in main.c to support printf debugging
 - Rev A - added hardware MIDI Thru/MIDI Out selection jumper to enable MIDI Out capability
     - Input to 74LS04 is jumper-selectable:
-        - Route STM32 USART1 Tx to MIDI Thru connector (for MIDI Out functionality)
+        - Route STM32 USART1 Tx to MIDI Thru connector (for MIDI Out/Sequencer functionality)
 
 ---
 
@@ -154,7 +155,7 @@ MIDI_Traffic_Monitor/
     - In `main.c`, call `scheduler_init();` and `tasks_init();` before the `while(1)` loop
     - The scheduler is driven by `run_scheduled_tasks()` called from `HAL_SYSTICK_Callback()`
     - Currently, 3 tasks defined:
-        - `heartbeat` – toggles LED for system heartbeat
+        - `heartbeat` – toggles LED for system heartbeat and manages UI selection highlighting
         - `read_encoders` – reads rotary encoder state
         - `poll_buttons` – checks button inputs
     - **Troubleshooting Tip**: If tasks aren't running or the heartbeat LED doesn't blink, ensure `HAL_SYSTICK_IRQHandler();` is present in `SysTick_Handler()`. Without it, `HAL_SYSTICK_Callback()` won't be triggered.
@@ -185,9 +186,14 @@ MIDI_Traffic_Monitor/
             - Long = none
 
 - Simple main.c forevever loop:
-    - Checks sequencer on/off setting/flag and TIM4 timeout
-        - selects random note from note selection list, writes MIDI packet to UART
-        - updates OLED display with note being sent
+    - Interrupt-driven sequencer engine/note generation ... takes place in HAL_TIM_PeriodElapsedCallback (TIM4 handle):
+        - Selects random note from note selection list, writes MIDI packet to UART
+            - Builds/completes chord if chords are enabled (clamps chord completion to size of selection list ... no out-of-bounds notes generated)
+        - Writes message to display cache for later display on OLED display
+        - Pre-prepares/stages next note
+    - Main loop:
+        - Checks for note-off expiration(s) in active_notes array
+        - Empties display cache in slack/idle time
 
 - tasks.c
     - Processes scheduler-dispatched periodic tasks

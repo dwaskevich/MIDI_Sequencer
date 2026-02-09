@@ -63,7 +63,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 volatile uint32_t ms_counter = 0;
-volatile uint16_t tim4_counter = 0;
+//volatile uint16_t tim4_counter = 0; /* use later for implementing synchronized tracks */
 
 // C major scale starting from C2 (Middle C ... i.e. C4 ... = MIDI note 60)
 //const uint8_t c_major_scale[] = {
@@ -103,6 +103,7 @@ static uint8_t display_line_pointer = FIRST_DISPLAY_LINE;
 uint8_t scale_notes[128] = {0}; /* dynamic selection list of notes for randomizer, built by build_scale in notes.c */
 uint16_t scale_length = 0; /* dynamic length of selection list (size returned by build_scale) */
 
+/* struct to keep track of notes that require note_off's */
 typedef struct {
 	uint16_t note;
 	uint8_t  channel;
@@ -110,6 +111,7 @@ typedef struct {
 	bool     is_slot_active;
 } active_note_t;
 
+/* struct to store pre-composed/staged next note to be sent */
 typedef struct {
 	uint8_t notes[3];
 	uint8_t channel;
@@ -117,12 +119,14 @@ typedef struct {
 	uint8_t count;
 } next_note_t;
 
+/* convenient enum for chord triads */
 typedef enum {
 	ROOT,
 	THIRD,
 	FIFTH
 } chord_notes_t;
 
+/* convenient enum for Miracle Teaching Keyboard virtual instruments (per default channel) - https://en.wikipedia.org/wiki/Miracle_Piano_Teaching_System */
 typedef enum {
 	PIANO = 1,
 	HARPSICHORD,
@@ -132,14 +136,18 @@ typedef enum {
 	SYNTHESIZER
 } miracle_keyboard_channels_t;
 
-next_note_t next_note;
+next_note_t next_note; /* declare storage for next note structure */
 
-#define MAX_DISPLAY_BUFFER 128
+/* declare storage FIFO for a display buffer to hold messages for ssd1306 OLED display */
+#define MAX_DISPLAY_BUFFER 32
 uint8_t display_buffer[MAX_DISPLAY_BUFFER][3];
 volatile uint16_t headPointer = 0, tailPointer = 0; /* FIFO head and tail pointers */
 
+/* declare storage array for "active" notes ... will be parsed for note_off generation at expiration */
 #define MAX_ACTIVE_NOTES 128
 static active_note_t active_notes[MAX_ACTIVE_NOTES] = {0};
+
+/* look-up table for Miracle keyboard note-off durations based on virtual instrument/channel number (channels 0-8) ... channels 9-16 just default values */
 const uint16_t channel_note_off_duration[16] = {0, 0, 0, 2500, 0, 0, 2500, 2000, 0, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
 
 /* USER CODE END PV */
@@ -187,6 +195,7 @@ uint16_t randomize(uint16_t lower_value, uint16_t upper_value)
 
 void cacheMidiMessage(void)
 {
+	/* cache real-time MIDI messages here for display later (in main loop idle time) due to ssd1306 I2C OLED display sluggishness */
 	display_buffer[headPointer][0] = midi_note_packet[0];
 	display_buffer[headPointer][1] = midi_note_packet[1];
 	display_buffer[headPointer][2] = midi_note_packet[2];
@@ -266,7 +275,7 @@ int main(void)
   __HAL_TIM_CLEAR_IT(&htim4, TIM_FLAG_UPDATE);
 
   scheduler_init();
-  tasks_init();
+  tasks_init(); /* scheduled tasks in tasks.c ... heartbeat, read_encoders, poll_buttons */
 
   /* initialize next_note */
   next_note.count = 0;
@@ -279,7 +288,7 @@ int main(void)
 
   srand(HAL_GetTick()); /* seed random number generator with system tick */
 
-  HAL_TIM_Base_Start_IT(&htim4);
+  HAL_TIM_Base_Start_IT(&htim4); /* TIM4 time base generation in interrupt mode */
 
   /* initialize note universe */
   scale_length = build_scale(ui_settings.key,
@@ -304,7 +313,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /* look for expiration(s) in active_notes array */
+	  /* Note - sequencer engine/note generation takes place in HAL_TIM_PeriodElapsedCallback (TIM4 handle) */
+
+	  /* look for note-off expiration(s) in active_notes array */
 	  uint32_t current_tick = HAL_GetTick();
 	  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 	  {
@@ -683,17 +694,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			HAL_TIM_Base_Start_IT(&htim4); /* restart timer to trigger next note */
 			__HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*(1 + ui_settings.syncopation)));
 
-			for(uint8_t i = 0; i < next_note.count; i++)
+			for(uint8_t i = 0; i < next_note.count; i++) /* send previously prepared/staged MIDI message(s) */
 			{
 				midiSendNoteOn(next_note.notes[i], next_note.channel, next_note.velocity);
-				cacheMidiMessage(); /* OLED display is sluggish, cache messages and display later */
+				cacheMidiMessage(); /* OLED display is sluggish, cache messages and display later in main loop idle time */
 			}
 
 			hal_timestamp = HAL_GetTick(); /* record current time to evaluate note-off expirations */
-			/* prepare next note */
+
+			/* prepare/stage next note */
 			while(previous_note == (next_note.notes[ROOT] = scale_notes[scale_index = randomize(0, scale_length - 1)]))
-			  ;
-			previous_note = next_note.notes[ROOT];
+			  ; /* don't repeat same note back-to-back */
+			previous_note = next_note.notes[ROOT]; /* save for next iteration */
 			next_note.channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
 			next_note.count = 1;
 			if(ORGAN == next_note.channel) /* organ (channel 3) too loud at high velocities */
