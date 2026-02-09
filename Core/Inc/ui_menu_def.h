@@ -14,7 +14,7 @@ X(MODE,          "Mode       ")
 X(KEY,           "Key        ")
 X(OCTAVE_RANGE,  "Octave L/H ")
 X(TEMPO,         "Tempo/BPM  ")
-X(HUMANIZE,      "Humanize   ")
+X(SYNCOPATION,   "Syncopation")
 X(CHANNEL,       "Channel L/H")
 
 

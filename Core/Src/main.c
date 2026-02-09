@@ -110,11 +110,35 @@ typedef struct {
 	bool     is_slot_active;
 } active_note_t;
 
-#define MAX_DISPLAY_BUFFER 12
+typedef struct {
+	uint8_t notes[3];
+	uint8_t channel;
+	uint8_t velocity;
+	uint8_t count;
+} next_note_t;
+
+typedef enum {
+	ROOT,
+	THIRD,
+	FIFTH
+} chord_notes_t;
+
+typedef enum {
+	PIANO = 1,
+	HARPSICHORD,
+	ORGAN,
+	VIBRAPHONE,
+	ELECTRIC_PIANO,
+	SYNTHESIZER
+} miracle_keyboard_channels_t;
+
+next_note_t next_note;
+
+#define MAX_DISPLAY_BUFFER 128
 uint8_t display_buffer[MAX_DISPLAY_BUFFER][3];
 volatile uint16_t headPointer = 0, tailPointer = 0; /* FIFO head and tail pointers */
 
-#define MAX_ACTIVE_NOTES 64
+#define MAX_ACTIVE_NOTES 128
 static active_note_t active_notes[MAX_ACTIVE_NOTES] = {0};
 const uint16_t channel_note_off_duration[16] = {0, 0, 0, 2500, 0, 0, 2500, 2000, 0, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
 
@@ -145,6 +169,7 @@ static void midiSend(uint8_t status, uint8_t note, uint8_t channel, uint8_t velo
     midi_note_packet[1] = note & 0x7F;
     midi_note_packet[2] = velocity & 0x7F;
     HAL_UART_Transmit(&huart1, midi_note_packet, sizeof(midi_note_packet), 100);
+    HAL_UART_Transmit(&huart2, midi_note_packet, sizeof(midi_note_packet), 100); /* echo midi traffic to console for testing */
 }
 
 void midiSendNoteOn(uint8_t note, uint8_t channel, uint8_t velocity) {
@@ -173,24 +198,17 @@ void cacheMidiMessage(void)
 void displayMidiMessages(void)
 {
 	/* manage OLED display updates in main loop slack time */
-	for(uint8_t i = 0; i < MAX_DISPLAY_BUFFER; i++)
+	if(tailPointer != headPointer) /* if true, new data is available */
 	{
-		if(1 == tim4_counter && ui_settings.on_off) /* skip display updates if TIM4 timer interrupt has fired */
-			return;
-		if(tailPointer != headPointer) /* if true, new data is available */
-		{
-			if(1 == tim4_counter && ui_settings.on_off) /* skip display updates if TIM4 timer interrupt has fired */
-				return;
-			display_string(midi_process_message(display_buffer[tailPointer][0], display_buffer[tailPointer][1], display_buffer[tailPointer][2]), display_line_pointer, 0, White, true);
-			display_line_pointer++;
-			if(display_line_pointer > LAST_DISPLAY_LINE)
-				display_line_pointer = FIRST_DISPLAY_LINE;
-			/* blank following line to visually indicate new message scrolling */
-			ssd1306_FillRectangle(0, 9*(display_line_pointer + 1) + 2, SSD1306_WIDTH, 9*(display_line_pointer + 1) + 10, Black);
-			tailPointer++; /* move display pointer */
-			if(tailPointer >= MAX_DISPLAY_BUFFER) /* manage FIFO pointer rollover */
-			  tailPointer = 0;
-		}
+		display_string(midi_process_message(display_buffer[tailPointer][0], display_buffer[tailPointer][1], display_buffer[tailPointer][2]), display_line_pointer, 0, White, true);
+		display_line_pointer++;
+		if(display_line_pointer > LAST_DISPLAY_LINE)
+			display_line_pointer = FIRST_DISPLAY_LINE;
+		/* blank following line to visually indicate new message scrolling (only takes 2 ms) */
+		ssd1306_FillRectangle(0, 9*(display_line_pointer + 1) + 2, SSD1306_WIDTH, 9*(display_line_pointer + 1) + 10, Black);
+		tailPointer++; /* move display pointer */
+		if(tailPointer >= MAX_DISPLAY_BUFFER) /* manage FIFO pointer rollover */
+		  tailPointer = 0;
 	}
 }
 
@@ -250,6 +268,13 @@ int main(void)
   scheduler_init();
   tasks_init();
 
+  /* initialize next_note */
+  next_note.count = 0;
+  next_note.channel = ui_settings.channel_low;
+  next_note.notes[0] = scale_notes[0];
+  next_note.notes[1] = scale_notes[0];
+  next_note.notes[2] = scale_notes[0];
+
   printf("UART started ....\r\n");
 
   srand(HAL_GetTick()); /* seed random number generator with system tick */
@@ -279,88 +304,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint8_t note;
-	  static uint8_t previous_note = 0;
-	  uint16_t scale_index;
-	  uint32_t hal_timestamp;
-	  if(true == ui_settings.on_off && 0 != tim4_counter)
-	  {
-		  __HAL_TIM_SET_COUNTER(&htim4, 0);
-		  __HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*2.67));
-		  HAL_TIM_Base_Start_IT(&htim4);
-		  while(previous_note == (note = scale_notes[scale_index = randomize(0, scale_length - 1)]))
-			  ;
-		  previous_note = note;
-		  uint8_t channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
-		  uint8_t velocity;
-		  if(3 == channel) /* organ (channel 3) too loud at high velocities */
-			  velocity = randomize(20, 60);
-		  else
-			  velocity = randomize(20, 100);
-		  midiSendNoteOn(note, channel, velocity);
-		  cacheMidiMessage(); /* cache current message for later display */
-		  hal_timestamp = HAL_GetTick(); /* record current time to evaluate note-off expirations */
-		  if(channel_note_off_duration[channel] != 0) /* log note if this channel has a note-off duration */
-		  {
-			  /* look for open slot in active_notes array */
-			  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
-			  {
-				  if(!active_notes[i].is_slot_active)
-				  {
-					  active_notes[i].note = note;
-					  active_notes[i].channel = channel;
-					  active_notes[i].timestamp = hal_timestamp;
-					  active_notes[i].is_slot_active = true;
-					  break;
-				  }
-			  }
-		  }
-		  if(ui_settings.chords) /* add notes to complete chord sequence (Triad only at this point ... i.e. 3-note chords only) */
-		  {
-			  if(scale_index <= scale_length - 3) /* don't exceed note selection array length */
-			  {
-				  midiSendNoteOn(scale_notes[scale_index + 2], channel, velocity); /* send third */
-				  cacheMidiMessage(); /* cache current message for later display */
-				  if(channel_note_off_duration[channel] != 0) /* log note if this channel has a note-off duration */
-				  {
-					  /* look for open slot in active_notes array */
-					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
-					  {
-						  if(!active_notes[i].is_slot_active)
-						  {
-							  active_notes[i].note = scale_notes[scale_index + 2];
-							  active_notes[i].channel = channel;
-							  active_notes[i].timestamp = hal_timestamp;
-							  active_notes[i].is_slot_active = true;
-							  break;
-						  }
-					  }
-				  }
-			  }
-			  if(scale_index <= scale_length - 5) /* don't exceed note selection array length */
-			  {
-				  midiSendNoteOn(scale_notes[scale_index + 4], channel, velocity); /* send fifth */
-				  cacheMidiMessage(); /* cache current message for later display */
-				  if(channel_note_off_duration[channel] != 0) /* log note if this channel has a note-off duration */
-				  {
-					  /* look for open slot in active_notes array */
-					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
-					  {
-						  if(!active_notes[i].is_slot_active)
-						  {
-							  active_notes[i].note = scale_notes[scale_index + 4];
-							  active_notes[i].channel = channel;
-							  active_notes[i].timestamp = hal_timestamp;
-							  active_notes[i].is_slot_active = true;
-							  break;
-						  }
-					  }
-				  }
-			  }
-		  }
-		  tim4_counter = 0; /* reset timer flag/counter */
-	  }
-
 	  /* look for expiration(s) in active_notes array */
 	  uint32_t current_tick = HAL_GetTick();
 	  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
@@ -369,9 +312,11 @@ int main(void)
 		  {
 			  if(current_tick - active_notes[i].timestamp > channel_note_off_duration[active_notes[i].channel])
 			  {
+				  __disable_irq(); /* make next 3 lines atomic */
 				  midiSendNoteOff(active_notes[i].note, active_notes[i].channel, 0);
 				  active_notes[i].is_slot_active = false;
 				  cacheMidiMessage(); /* cache current message for later display */
+				  __enable_irq();
 			  }
 		  }
 	  }
@@ -726,12 +671,97 @@ int __io_putchar(int ch) {
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	static uint8_t previous_note = 0;
+	uint16_t scale_index;
+	uint32_t hal_timestamp;
 	if(htim->Instance == TIM4)
 	{
-		tim4_counter++; /* increment timeout counter */
 		HAL_TIM_Base_Stop_IT(htim);
-	}
+		__HAL_TIM_SET_COUNTER(&htim4, 0);
+		if(ui_settings.on_off)
+		{
+			HAL_TIM_Base_Start_IT(&htim4); /* restart timer to trigger next note */
+			__HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*(1 + ui_settings.syncopation)));
 
+			for(uint8_t i = 0; i < next_note.count; i++)
+			{
+				midiSendNoteOn(next_note.notes[i], next_note.channel, next_note.velocity);
+				cacheMidiMessage(); /* OLED display is sluggish, cache messages and display later */
+			}
+
+			hal_timestamp = HAL_GetTick(); /* record current time to evaluate note-off expirations */
+			/* prepare next note */
+			while(previous_note == (next_note.notes[ROOT] = scale_notes[scale_index = randomize(0, scale_length - 1)]))
+			  ;
+			previous_note = next_note.notes[ROOT];
+			next_note.channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
+			next_note.count = 1;
+			if(ORGAN == next_note.channel) /* organ (channel 3) too loud at high velocities */
+			  next_note.velocity = randomize(20, 60);
+			else
+			  next_note.velocity = randomize(20, 100);
+			/* log note-off reminders */
+			if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
+			{
+			  /* look for open slot in active_notes array */
+			  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+			  {
+				  if(!active_notes[i].is_slot_active)
+				  {
+					  active_notes[i].note = next_note.notes[ROOT];
+					  active_notes[i].channel = next_note.channel;
+					  active_notes[i].timestamp = hal_timestamp;
+					  active_notes[i].is_slot_active = true;
+					  break;
+				  }
+			  }
+			}
+			/* build chord */
+			if(ui_settings.chords) /* add notes to complete chord sequence (Triad only at this point ... i.e. 3-note chords only) */
+			{
+			  if(scale_index <= scale_length - 3) /* don't exceed note selection array length */
+			  {
+				  next_note.notes[THIRD] = scale_notes[scale_index + 2];
+				  next_note.count++;
+				  if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
+				  {
+					  /* look for open slot in active_notes array */
+					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+					  {
+						  if(!active_notes[i].is_slot_active)
+						  {
+							  active_notes[i].note = next_note.notes[THIRD];
+							  active_notes[i].channel = next_note.channel;
+							  active_notes[i].timestamp = hal_timestamp;
+							  active_notes[i].is_slot_active = true;
+							  break;
+						  }
+					  }
+				  }
+			  }
+			  if(scale_index <= scale_length - 5) /* don't exceed note selection array length */
+			  {
+				  next_note.notes[FIFTH] = scale_notes[scale_index + 4];
+				  next_note.count++;
+				  if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
+				  {
+					  /* look for open slot in active_notes array */
+					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+					  {
+						  if(!active_notes[i].is_slot_active)
+						  {
+							  active_notes[i].note = next_note.notes[FIFTH];
+							  active_notes[i].channel = next_note.channel;
+							  active_notes[i].timestamp = hal_timestamp;
+							  active_notes[i].is_slot_active = true;
+							  break;
+						  }
+					  }
+				  }
+			  }
+			}
+		}
+	}
 }
 
 /* USER CODE END 4 */

@@ -26,7 +26,8 @@ const char *menuNames[] = {
 
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false;
-struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 600, 167, 2, 6, 1, 1, PRESET_PEACEFUL};
+/* ui_settings: on_off, chords,  mode,  key, tempo_bpm*2, syncopation index, octave_low, octave_high, channel_low, channel_high, presets */
+struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 600, 0, 2, 6, 1, 1, PRESET_PEACEFUL}; /* initialize ui settings */
 bool ui_heartbeat_display_update_flag = false;
 bool ui_primary_secondary_value_flag = false;
 
@@ -35,6 +36,8 @@ char ui_display_buffer_b[16];
 
 const size_t menuCount = sizeof(menuNames) / sizeof(menuNames[0]);
 int16_t menuIndex = 0;
+
+const float syncopation_values[6] = {0, .5, 1, 1.67, 2, 2.5};
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 {
@@ -78,14 +81,14 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_TEMPO:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.tempo); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.tempo; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * 2.67));
+			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation)));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
-		case MENU_HUMANIZE:
-			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.humanize); /* restore value selection encoder to previous counter value (prevents jumping) */
-			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.humanize; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d", ui_settings.humanize);
+		case MENU_SYNCOPATION:
+			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.syncopation); /* restore value selection encoder to previous counter value (prevents jumping) */
+			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.syncopation; /* save/record previous value for use in tasks.c delta calculation */
+			sprintf(printBuffer, "%d%%", (uint16_t)(ui_settings.syncopation * 100));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
@@ -124,6 +127,15 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	switch (menuIndex) {
 	    case MENU_ON_OFF:
 	    	ui_settings.on_off = encoder_value % 2; /* use encoder value to set sequencer on or off */
+	    	if(0 != ui_settings.on_off)
+	    	{
+	    		__HAL_TIM_SET_COUNTER(&htim4, 0);
+	    		HAL_TIM_Base_Start_IT(&htim4);
+	    	}
+	    	else
+	    	{
+	    		HAL_TIM_Base_Stop_IT(&htim4);
+	    	}
 	    	ui_encoderValues.on_off = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
 	    	sprintf(printBuffer, "%s", (ui_settings.on_off ? "On" : "Off"));
 	    	display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
@@ -171,14 +183,24 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	}
 	    	ui_settings.tempo_bpm = ui_settings.tempo_bpm; /* update ui settings for this menu item */
 	    	ui_encoderValues.tempo = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * 2.67));
+			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation)));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
-	    case MENU_HUMANIZE:
-	    	ui_settings.humanize = encoder_value; /* update ui settings for this menu item */
-	    	ui_encoderValues.humanize = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-	    	sprintf(printBuffer, "%d", ui_settings.humanize);
+	    case MENU_SYNCOPATION:
+	    	if(encoder_value < 0)
+	    	{
+	    		__HAL_TIM_SET_COUNTER(&htim2, 0);
+	    		encoder_value = 0;
+	    	}
+	    	else if(encoder_value >= 5)
+	    	{
+				__HAL_TIM_SET_COUNTER(&htim2, 5*2); /* reminder ... value_encoder produces 2 counts per detent */
+				encoder_value = 5;
+			}
+	    	ui_settings.syncopation = syncopation_values[encoder_value]; /* update ui settings for this menu item */
+	    	ui_encoderValues.syncopation = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+	    	sprintf(printBuffer, "%d%%", (uint16_t)(ui_settings.syncopation * 100));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
@@ -271,9 +293,13 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			/* apply preset settings to ui_settings */
 			ui_settings.key         = presets[ui_settings.presets].key;
 			ui_settings.mode        = presets[ui_settings.presets].mode;
+			ui_settings.chords      = presets[ui_settings.presets].chords;
+			ui_settings.tempo_bpm   = presets[ui_settings.presets].tempo_bpm;
+			ui_settings.syncopation = syncopation_values[presets[ui_settings.presets].syncopation];
+			ui_encoderValues.syncopation = presets[ui_settings.presets].syncopation * 2; /* synchronize encoder value */
 			ui_settings.octave_low  = presets[ui_settings.presets].octave_low;
 			ui_settings.octave_high = presets[ui_settings.presets].octave_high;
-			printf("[preset] %s - ", presets[ui_settings.presets].name);
+			printf("[preset] %s - ", presets[ui_settings.presets].name); /* output name to console */
 			scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 

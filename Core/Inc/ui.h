@@ -37,7 +37,7 @@ struct uiEncoderValues {
 	int16_t  mode;
 	int16_t  key;
 	int16_t  tempo;
-	int16_t  humanize;
+	int16_t  syncopation;
 	int16_t  octave_range_low;
 	int16_t  octave_range_high;
 	int16_t  channel_low;
@@ -51,7 +51,7 @@ struct uiSettings {
 	uint16_t  mode;
 	uint16_t  key;
 	uint16_t  tempo_bpm;
-	uint16_t  humanize;
+	float     syncopation;
 	uint16_t  octave_low;
 	uint16_t  octave_high;
 	int16_t   channel_low;

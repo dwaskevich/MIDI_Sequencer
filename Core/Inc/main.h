@@ -38,6 +38,7 @@ extern "C" {
 /* USER CODE BEGIN ET */
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 
 extern uint8_t scale_notes[128];
 extern uint16_t scale_length;
@@ -58,7 +59,6 @@ extern uint16_t scale_length;
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-uint16_t randomize(uint16_t lower_value, uint16_t upper_value);
 
 /* USER CODE END EFP */
 
