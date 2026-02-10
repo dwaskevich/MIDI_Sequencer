@@ -111,8 +111,8 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			ui_primary_secondary_value_flag = false; /* this menu has multi-value selection, clear primary/secondary flag */
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.channel_low); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.channel_low; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(ui_display_buffer_a, "%d / %d", ui_settings.channel_low, ui_settings.channel_high);
-			sprintf(ui_display_buffer_b, "  / %d", ui_settings.channel_high);
+			sprintf(ui_display_buffer_a, "%-2d/ %d", ui_settings.channel_low, ui_settings.channel_high);
+			sprintf(ui_display_buffer_b, " / %d", ui_settings.channel_high);
 			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
@@ -120,8 +120,8 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			ui_primary_secondary_value_flag = false; /* this menu has multi-value selection, clear primary/secondary flag */
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.velocity_low); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.velocity_low; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(ui_display_buffer_a, "%-3d/%3d", ui_settings.velocity_low, ui_settings.velocity_high);
-			sprintf(ui_display_buffer_b, "   /%3d", ui_settings.velocity_high);
+			sprintf(ui_display_buffer_a, "%-3d/ %d", ui_settings.velocity_low, ui_settings.velocity_high);
+			sprintf(ui_display_buffer_b, "   / %d", ui_settings.velocity_high);
 			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
@@ -273,7 +273,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 					ui_settings.channel_high = ui_settings.channel_low; /* track channel high with channel low */
 				}
 				ui_encoderValues.channel_low = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-				sprintf(ui_display_buffer_a, "%d / %d", ui_settings.channel_low, ui_settings.channel_high);
+				sprintf(ui_display_buffer_a, "%-2d/ %d", ui_settings.channel_low, ui_settings.channel_high);
 				sprintf(ui_display_buffer_b, "  / %d", ui_settings.channel_high);
 			}
 			else /* modify/operate on secondary (high) value */
@@ -292,8 +292,8 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 					ui_settings.channel_high = MIDI_MAX_CHANNELS;
 				}
 				ui_encoderValues.channel_high = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-				sprintf(ui_display_buffer_a, "%d / %d", ui_settings.channel_low, ui_settings.channel_high);
-				sprintf(ui_display_buffer_b, "%d /", ui_settings.channel_low);
+				sprintf(ui_display_buffer_a, "%-2d/ %d", ui_settings.channel_low, ui_settings.channel_high);
+				sprintf(ui_display_buffer_b, "%-2d/", ui_settings.channel_low);
 			}
 	        break;
 
@@ -315,8 +315,8 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 					ui_settings.velocity_high = ui_settings.velocity_low; /* track velocity high with velocity low */
 				}
 				ui_encoderValues.velocity_low = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-				sprintf(ui_display_buffer_a, "%-3d/%3d", ui_settings.velocity_low, ui_settings.velocity_high);
-				sprintf(ui_display_buffer_b, "   /%3d", ui_settings.velocity_high);
+				sprintf(ui_display_buffer_a, "%-3d/ %d", ui_settings.velocity_low, ui_settings.velocity_high);
+				sprintf(ui_display_buffer_b, "   / %d", ui_settings.velocity_high);
 			}
 			else /* modify/operate on secondary (high) value */
 			{
@@ -334,7 +334,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 					ui_settings.velocity_high = MIDI_MAX_VELOCITY;
 				}
 				ui_encoderValues.velocity_high = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-				sprintf(ui_display_buffer_a, "%-3d/%3d", ui_settings.velocity_low, ui_settings.velocity_high);
+				sprintf(ui_display_buffer_a, "%-3d/ %d", ui_settings.velocity_low, ui_settings.velocity_high);
 				sprintf(ui_display_buffer_b, "%-3d/", ui_settings.velocity_low);
 			}
 			break;
