@@ -82,6 +82,17 @@ static void poll_buttons(void) {
         				handle_value_encoder(ui_encoderValues.channel_high, 0);
         			}
         			break;
+
+        		case MENU_VELOCITY:
+        			if(false == ui_primary_secondary_value_flag)
+        			{
+        				handle_value_encoder(ui_encoderValues.velocity_low, 0);
+        			}
+        			else
+        			{
+        				handle_value_encoder(ui_encoderValues.velocity_high, 0);
+        			}
+        			break;
         	}
             break;
         case BUTTON_EVENT_LONG_PRESS:

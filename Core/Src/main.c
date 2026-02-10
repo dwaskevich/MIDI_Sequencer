@@ -708,10 +708,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			previous_note = next_note.notes[ROOT]; /* save for next iteration */
 			next_note.channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
 			next_note.count = 1;
-			if(ORGAN == next_note.channel) /* organ (channel 3) too loud at high velocities */
-			  next_note.velocity = randomize(20, 60);
-			else
-			  next_note.velocity = randomize(20, 100);
+			next_note.velocity = randomize(ui_settings.velocity_low, ui_settings.velocity_high);
 			/* log note-off reminders */
 			if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
 			{

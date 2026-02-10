@@ -16,5 +16,6 @@ X(OCTAVE_RANGE,  "Octave L/H ")
 X(TEMPO,         "Tempo/BPM  ")
 X(SYNCOPATION,   "Syncopation")
 X(CHANNEL,       "Channel L/H")
+X(VELOCITY,      "Velocity   ")
 
 
