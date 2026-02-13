@@ -6,6 +6,7 @@
  */
 
 #include "notes.h"
+#include "main.h"
 #include <stdio.h>
 #include "modes.h"
 
@@ -42,16 +43,21 @@ int16_t build_scale(uint8_t pitch_class,
     uint8_t root_note = ((octave_low + 1) * 12) + pitch_class; /* sets lowest MIDI note in selection list */
     uint8_t note = root_note;
     int16_t count = 0;
-
+#if ENABLE_CONSOLE_DEBUG
     /* verify output on console */
     printf("%s (%s_%d, %d octaves): ", mode_display_names[ui_settings.mode], note_display_names[pitch_class], octave_low, octave_high - octave_low);
+#endif
     while (note <= (((octave_high + 1) * 12) + pitch_class) && count < max_notes) {
+#if ENABLE_CONSOLE_DEBUG
     	printf("%d, ", note);
+#endif
     	output_note_array[count++] = note;
         uint8_t interval = semitone_interval[(count - 1) % interval_count]; /* modulo automatically circles back to beginning of semitone sequence array */
         note += interval; /* advance note by referenced number of semitones (i.e. full-step or half-step) */
     }
+#if ENABLE_CONSOLE_DEBUG
     printf(" - #notes = %d.\r\n", count);
+#endif
 
     return count; /* number of notes generated ... use return value for traversing the note list array */
 }

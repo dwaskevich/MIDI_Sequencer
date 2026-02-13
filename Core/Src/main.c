@@ -177,7 +177,9 @@ static void midiSend(uint8_t status, uint8_t note, uint8_t channel, uint8_t velo
     midi_note_packet[1] = note & 0x7F;
     midi_note_packet[2] = velocity & 0x7F;
     HAL_UART_Transmit(&huart1, midi_note_packet, sizeof(midi_note_packet), 100);
-    HAL_UART_Transmit(&huart2, midi_note_packet, sizeof(midi_note_packet), 100); /* echo midi traffic to console for testing */
+#if ENABLE_CONSOLE_RAW
+    HAL_UART_Transmit(&huart2, midi_note_packet, sizeof(midi_note_packet), 100); /* write raw midi data to console for testing */
+#endif
 }
 
 void midiSendNoteOn(uint8_t note, uint8_t channel, uint8_t velocity) {
@@ -209,12 +211,28 @@ void displayMidiMessages(void)
 	/* manage OLED display updates in main loop slack time */
 	if(tailPointer != headPointer) /* if true, new data is available */
 	{
+#if ENABLE_CONSOLE_TEST
+		const char crlf[] = {"\r\n"};
+		char *temp;
+		temp = midi_process_message(display_buffer[tailPointer][0], display_buffer[tailPointer][1], display_buffer[tailPointer][2]);
+		uint8_t i;
+		for(i = 0; i < 20; i++)
+		{
+			if(0 == temp[i])
+				break;
+		}
+		HAL_UART_Transmit(&huart2, (uint8_t *)temp, i, 100); /* echo midi traffic to console for testing */
+		HAL_UART_Transmit(&huart2, (uint8_t *)crlf, 2, 100);
+#else
 		display_string(midi_process_message(display_buffer[tailPointer][0], display_buffer[tailPointer][1], display_buffer[tailPointer][2]), display_line_pointer, 0, White, true);
+#endif
 		display_line_pointer++;
 		if(display_line_pointer > LAST_DISPLAY_LINE)
 			display_line_pointer = FIRST_DISPLAY_LINE;
+#if !ENABLE_CONSOLE_TEST
 		/* blank following line to visually indicate new message scrolling (only takes 2 ms) */
 		ssd1306_FillRectangle(0, 9*(display_line_pointer + 1) + 2, SSD1306_WIDTH, 9*(display_line_pointer + 1) + 10, Black);
+#endif
 		tailPointer++; /* move display pointer */
 		if(tailPointer >= MAX_DISPLAY_BUFFER) /* manage FIFO pointer rollover */
 		  tailPointer = 0;
@@ -284,7 +302,9 @@ int main(void)
   next_note.notes[1] = scale_notes[0];
   next_note.notes[2] = scale_notes[0];
 
+#if ENABLE_CONSOLE_DEBUG
   printf("UART started ....\r\n");
+#endif
 
   srand(HAL_GetTick()); /* seed random number generator with system tick */
 
@@ -299,6 +319,7 @@ int main(void)
 		  scale_notes,
 		  sizeof(scale_notes));
 
+#if ENABLE_CONSOLE_DEBUG
   /* confirm note list (print to console) */
   printf("Number of notes = %d\r\n", scale_length);
   for(uint8_t i = 0; i < scale_length; i++)
@@ -306,6 +327,7 @@ int main(void)
 	  printf("%d, ", scale_notes[i]);
   }
   printf("\r\n");
+#endif
 
   /* USER CODE END 2 */
 

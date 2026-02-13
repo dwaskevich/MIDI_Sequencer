@@ -356,7 +356,9 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			ui_encoderValues.syncopation = presets[ui_settings.presets].syncopation * 2; /* synchronize encoder value */
 			ui_settings.octave_low  = presets[ui_settings.presets].octave_low;
 			ui_settings.octave_high = presets[ui_settings.presets].octave_high;
+#if ENABLE_CONSOLE_DEBUG
 			printf("[preset] %s - ", presets[ui_settings.presets].name); /* output name to console */
+#endif
 			scale_length = build_scale(ui_settings.key, mode_intervals[ui_settings.mode], mode_interval_count[ui_settings.mode], ui_settings.octave_low, ui_settings.octave_high, scale_notes, sizeof(scale_notes)/sizeof(scale_notes[0]));
 			break;
 

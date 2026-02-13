@@ -53,6 +53,11 @@ extern uint16_t scale_length;
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
+/* preprocessor directives for conditional code macros */
+#define ENABLE_CONSOLE_DEBUG 0
+#define ENABLE_CONSOLE_TEST  0
+#define ENABLE_CONSOLE_RAW   0
+
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

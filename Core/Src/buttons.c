@@ -7,6 +7,7 @@
 
 #include "buttons.h"
 #include "stm32f1xx_hal.h"
+#include "main.h"
 #include <stdio.h>
 
 #define LONG_PRESS_THRESHOLD_MS 500
@@ -78,7 +79,9 @@ void button_poll(void) {
 			uint32_t duration = release_time - press_time;
             if (duration >= LONG_PRESS_THRESHOLD_MS) {
                 button_states[i].pending_event = BUTTON_EVENT_LONG_PRESS;
+#if ENABLE_CONSOLE_DEBUG
                 printf("Button %d: LONG press (%lu ms)\r\n", i + 1, duration);
+#endif
                 switch(i)
                 {
                 	case BUTTON_1: /* long press */
@@ -97,7 +100,9 @@ void button_poll(void) {
                 }
             } else {
                 button_states[i].pending_event = BUTTON_EVENT_SHORT_PRESS;
+#if ENABLE_CONSOLE_DEBUG
                 printf("Button %d: SHORT press (%lu ms)\r\n", i + 1, duration);
+#endif
                 switch(i)
 				{
 					case BUTTON_1: /* short press */
