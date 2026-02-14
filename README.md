@@ -4,22 +4,45 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 
 ---
 
-## Table of Contents - [Features](#features) - [Hardware Requirements](#hardware-requirements) - [Schematic](#schematic) - [STM32 Blue Pill Pinout Configuration](#stm32-blue-pill-pinout-configuration) - [3D PCB Render](#3d-pcb-render) - [Project Structure](#project-structure) - [Building and Flashing](#building-and-flashing) - [STM32F103 Setup (CubeMX)](#stm32f103-setup-cubemx) - [Hardware](#hardware) - [Firmware Architecture](#firmware-architecture)
+## Table of Contents - [Features](#features) - [Menus](#menu-system) - [Hardware Requirements](#hardware-requirements) - [Schematic](#schematic) - [STM32 Blue Pill Pinout Configuration](#stm32-blue-pill-pinout-configuration) - [3D PCB Render](#3d-pcb-render) - [Project Structure](#project-structure) - [Building and Flashing](#building-and-flashing) - [STM32F103 Setup (CubeMX)](#stm32f103-setup-cubemx) - [Hardware](#hardware) - [Firmware Architecture](#firmware-architecture)
 
 ---
 
 ## Features
 
 - **Menu-driven sequencer** via two pushbutton rotary encoders
-- **Simple main.c note generator engine** driven by TIM4 timer interrupts
+- **Simple main.c note generator engine** triggered by TIM4 timer interrupts
     - Supports chord triads and up to 600 BPM
 - **OLED display output** using 128 x 64, .96" SSD1306 over I2C
 - **MIDI note generation** cached and displayed on OLED display
 - **13 common modes** including 5, 6 and 7 interval sequences
-- **User interface with rotary encoders** enables customized settings for mode, key, octave range, tempo and channel selection
+- **User interface with rotary encoders** enables customized settings for mode, key, octave range, tempo, channel selection and velocity
 - **User presets** defined in x-macro for easy updates/additions
 - **Console UART** for debug messaging and session monitoring
 - **MIDI Out buffering** with activity LED
+
+---
+
+## Menu System
+
+| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo/msec | Syncopation | Chanel L/H | Velocity L/H |
+| ---------- | ------ | ---------- | ---------- | --- | ---------- | ---------- | ----------- | ---------- | -------- |
+| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 100        | 0%          | 1-16       | 1-127    |
+| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 200        | 50%         | 1-16       | 1-127    |
+|            |        | Vivaldi    | Phrygian   | D   |            | 300        | 100%        |            |          |
+|            |        | MilesDavis | Lydian     | D#  |            | 400        | 167%        |            |          |
+|            |        | Jazz       | Mixolydian | E   |            | 500        | 200%        |            |          |
+|            |        | ECM_Jazz   | Aeolian    | F   |            | 600        | 250%        |            |          |
+|            |        | Happy      | Locrian    | F#  |            | 700        |             |            |          |
+|            |        | Melodic    | Pent Major | G   |            | 800        |             |            |          |
+|            |        | Gritty     | Pent Minor | G#  |            | 900        |             |            |          |
+|            |        | Cinematic  | Blues      | A   |            | 1000       |             |            |          |
+|            |        | Spacy      | WholeTones | A#  |            | 1100       |             |            |          |
+|            |        |            | Harm Minor | B   |            | 1200       |             |            |          |
+|            |        |            | Melod Min  |     |            | 1300       |             |            |          |
+|            |        |            |            |     |            | 1400       |             |            |          |
+|            |        |            |            |     |            | 1500       |             |            |          |
+
 
 ---
 
