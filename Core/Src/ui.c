@@ -87,7 +87,7 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_TEMPO:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.tempo); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.tempo; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation)));
+			sprintf(printBuffer, "%d/%d", 60000 / (ui_settings.tempo_bpm / 2), 60000 / ((uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation))));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
@@ -198,7 +198,7 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	}
 	    	ui_settings.tempo_bpm = ui_settings.tempo_bpm; /* update ui settings for this menu item */
 	    	ui_encoderValues.tempo = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-			sprintf(printBuffer, "%d/%d", ui_settings.tempo_bpm / 2, (uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation)));
+	    	sprintf(printBuffer, "%d/%d", 60000 / (ui_settings.tempo_bpm / 2), 60000 / ((uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation))));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 

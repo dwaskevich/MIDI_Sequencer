@@ -25,23 +25,23 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 
 ## Menu System
 
-| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo/msec | Syncopation | Chanel L/H | Velocity L/H |
+| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo BPM  | Syncopation | Chanel L/H | Velocity L/H |
 | ---------- | ------ | ---------- | ---------- | --- | ---------- | ---------- | ----------- | ---------- | -------- |
-| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 100        | 0%          | 1-16       | 1-127    |
-| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 200        | 50%         | 1-16       | 1-127    |
-|            |        | Vivaldi    | Phrygian   | D   |            | 300        | 100%        |            |          |
-|            |        | MilesDavis | Lydian     | D#  |            | 400        | 167%        |            |          |
-|            |        | Jazz       | Mixolydian | E   |            | 500        | 200%        |            |          |
-|            |        | ECM_Jazz   | Aeolian    | F   |            | 600        | 250%        |            |          |
-|            |        | Happy      | Locrian    | F#  |            | 700        |             |            |          |
-|            |        | Melodic    | Pent Major | G   |            | 800        |             |            |          |
-|            |        | Gritty     | Pent Minor | G#  |            | 900        |             |            |          |
-|            |        | Cinematic  | Blues      | A   |            | 1000       |             |            |          |
-|            |        | Spacy      | WholeTones | A#  |            | 1100       |             |            |          |
-|            |        |            | Harm Minor | B   |            | 1200       |             |            |          |
-|            |        |            | Melod Min  |     |            | 1300       |             |            |          |
-|            |        |            |            |     |            | 1400       |             |            |          |
-|            |        |            |            |     |            | 1500       |             |            |          |
+| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 600        | 0%          | 1-16       | 1-127    |
+| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 300        | 50%         | 1-16       | 1-127    |
+|            |        | Vivaldi    | Phrygian   | D   |            | 200        | 100%        |            |          |
+|            |        | MilesDavis | Lydian     | D#  |            | 150        | 167%        |            |          |
+|            |        | Jazz       | Mixolydian | E   |            | 120        | 200%        |            |          |
+|            |        | ECM_Jazz   | Aeolian    | F   |            | 100        | 250%        |            |          |
+|            |        | Happy      | Locrian    | F#  |            | 85         |             |            |          |
+|            |        | Melodic    | Pent Major | G   |            | 75         |             |            |          |
+|            |        | Gritty     | Pent Minor | G#  |            | 66         |             |            |          |
+|            |        | Cinematic  | Blues      | A   |            | 60         |             |            |          |
+|            |        | Spacy      | WholeTones | A#  |            | 54         |             |            |          |
+|            |        |            | Harm Minor | B   |            | 50         |             |            |          |
+|            |        |            | Melod Min  |     |            | 46         |             |            |          |
+|            |        |            |            |     |            | 42         |             |            |          |
+|            |        |            |            |     |            | 40         |             |            |          |
 
 
 ---
