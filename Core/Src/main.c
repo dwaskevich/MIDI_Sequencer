@@ -346,7 +346,8 @@ int main(void)
 			  if(current_tick - active_notes[i].timestamp > channel_note_off_duration[active_notes[i].channel])
 			  {
 				  __disable_irq(); /* make next 3 lines atomic */
-				  midiSendNoteOff(active_notes[i].note, active_notes[i].channel, 0);
+//				  midiSendNoteOff(active_notes[i].note, active_notes[i].channel, 0);
+				  midiSendNoteOn(active_notes[i].note, active_notes[i].channel, 0); /* note_on with 0 velocity is equivalent to note_off */
 				  active_notes[i].is_slot_active = false;
 				  cacheMidiMessage(); /* cache current message for later display */
 				  __enable_irq();
