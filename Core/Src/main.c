@@ -44,6 +44,9 @@
 #define FIRST_DISPLAY_LINE	1u
 #define LAST_DISPLAY_LINE	6u
 
+/* constant for MIDI "clock" realtime message */
+#define MIDI_CLOCK	0xF8
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -117,6 +120,7 @@ typedef struct {
 	uint8_t channel;
 	uint8_t velocity;
 	uint8_t count;
+	uint8_t rest_count;
 } next_note_t;
 
 /* convenient enum for chord triads */
@@ -136,7 +140,7 @@ typedef enum {
 	SYNTHESIZER
 } miracle_keyboard_channels_t;
 
-next_note_t next_note; /* declare storage for next note structure */
+next_note_t next_note = {0}; /* declare storage for next note structure */
 
 /* declare storage FIFO for a display buffer to hold messages for ssd1306 OLED display */
 #define MAX_DISPLAY_BUFFER 32
@@ -708,6 +712,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	static uint8_t previous_note = 0;
 	uint16_t scale_index;
 	uint32_t hal_timestamp;
+	uint8_t midi_clock = MIDI_CLOCK;
 	if(htim->Instance == TIM4)
 	{
 		HAL_TIM_Base_Stop_IT(htim);
@@ -715,82 +720,100 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if(ui_settings.on_off)
 		{
 			HAL_TIM_Base_Start_IT(&htim4); /* restart timer to trigger next note */
-			__HAL_TIM_SET_AUTORELOAD(&htim4, randomize(ui_settings.tempo_bpm, (uint16_t)ui_settings.tempo_bpm*(1 + ui_settings.syncopation)));
+			__HAL_TIM_SET_AUTORELOAD(&htim4, ui_settings.tempo_bpm);
 
-			for(uint8_t i = 0; i < next_note.count; i++) /* send previously prepared/staged MIDI message(s) */
+			/* send MIDI Clock (0xF8) message every interrupt to keep downstream devices in sync */
+			HAL_UART_Transmit(&huart1, &midi_clock, 1, 100);
+
+			if(0 == next_note.rest_count--)
 			{
-				midiSendNoteOn(next_note.notes[i], next_note.channel, next_note.velocity);
-				cacheMidiMessage(); /* OLED display is sluggish, cache messages and display later in main loop idle time */
-			}
+				for(uint8_t i = 0; i < next_note.count; i++) /* send previously prepared/staged MIDI message(s) */
+				{
+					midiSendNoteOn(next_note.notes[i], next_note.channel, next_note.velocity);
+					cacheMidiMessage(); /* OLED display is sluggish, cache messages and display later in main loop idle time */
+				}
 
-			hal_timestamp = HAL_GetTick(); /* record current time to evaluate note-off expirations */
+				hal_timestamp = HAL_GetTick(); /* record current time to evaluate note-off expirations */
 
-			/* prepare/stage next note */
-			while(previous_note == (next_note.notes[ROOT] = scale_notes[scale_index = randomize(0, scale_length - 1)]))
-			  ; /* don't repeat same note back-to-back */
-			previous_note = next_note.notes[ROOT]; /* save for next iteration */
-			next_note.channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
-			next_note.count = 1;
-			next_note.velocity = randomize(ui_settings.velocity_low, ui_settings.velocity_high);
-			/* log note-off reminders */
-			if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
-			{
-			  /* look for open slot in active_notes array */
-			  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
-			  {
-				  if(!active_notes[i].is_slot_active)
+				/* prepare/stage next note */
+				while(previous_note == (next_note.notes[ROOT] = scale_notes[scale_index = randomize(0, scale_length - 1)]))
+				  ; /* don't repeat same note back-to-back */
+				previous_note = next_note.notes[ROOT]; /* save for next iteration */
+				next_note.channel = randomize(ui_settings.channel_low, ui_settings.channel_high);
+				next_note.count = 1;
+				next_note.velocity = randomize(ui_settings.velocity_low, ui_settings.velocity_high);
+				/* log note-off reminders */
+				if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
+				{
+				  /* look for open slot in active_notes array */
+				  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 				  {
-					  active_notes[i].note = next_note.notes[ROOT];
-					  active_notes[i].channel = next_note.channel;
-					  active_notes[i].timestamp = hal_timestamp;
-					  active_notes[i].is_slot_active = true;
-					  break;
-				  }
-			  }
-			}
-			/* build chord */
-			if(ui_settings.chords) /* add notes to complete chord sequence (Triad only at this point ... i.e. 3-note chords only) */
-			{
-			  if(scale_index <= scale_length - 3) /* don't exceed note selection array length */
-			  {
-				  next_note.notes[THIRD] = scale_notes[scale_index + 2];
-				  next_note.count++;
-				  if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
-				  {
-					  /* look for open slot in active_notes array */
-					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+					  if(!active_notes[i].is_slot_active)
 					  {
-						  if(!active_notes[i].is_slot_active)
+						  active_notes[i].note = next_note.notes[ROOT];
+						  active_notes[i].channel = next_note.channel;
+						  active_notes[i].timestamp = hal_timestamp;
+						  active_notes[i].is_slot_active = true;
+						  break;
+					  }
+				  }
+				}
+				/* build chord */
+				if(ui_settings.chords) /* add notes to complete chord sequence (Triad only at this point ... i.e. 3-note chords only) */
+				{
+				  if(scale_index <= scale_length - 3) /* don't exceed note selection array length */
+				  {
+					  next_note.notes[THIRD] = scale_notes[scale_index + 2];
+					  next_note.count++;
+					  if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
+					  {
+						  /* look for open slot in active_notes array */
+						  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 						  {
-							  active_notes[i].note = next_note.notes[THIRD];
-							  active_notes[i].channel = next_note.channel;
-							  active_notes[i].timestamp = hal_timestamp;
-							  active_notes[i].is_slot_active = true;
-							  break;
+							  if(!active_notes[i].is_slot_active)
+							  {
+								  active_notes[i].note = next_note.notes[THIRD];
+								  active_notes[i].channel = next_note.channel;
+								  active_notes[i].timestamp = hal_timestamp;
+								  active_notes[i].is_slot_active = true;
+								  break;
+							  }
 						  }
 					  }
 				  }
-			  }
-			  if(scale_index <= scale_length - 5) /* don't exceed note selection array length */
-			  {
-				  next_note.notes[FIFTH] = scale_notes[scale_index + 4];
-				  next_note.count++;
-				  if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
+				  if(scale_index <= scale_length - 5) /* don't exceed note selection array length */
 				  {
-					  /* look for open slot in active_notes array */
-					  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
+					  next_note.notes[FIFTH] = scale_notes[scale_index + 4];
+					  next_note.count++;
+					  if(channel_note_off_duration[next_note.channel] != 0) /* log note if this channel has a note-off duration */
 					  {
-						  if(!active_notes[i].is_slot_active)
+						  /* look for open slot in active_notes array */
+						  for(uint8_t i = 0; i < MAX_ACTIVE_NOTES; i++)
 						  {
-							  active_notes[i].note = next_note.notes[FIFTH];
-							  active_notes[i].channel = next_note.channel;
-							  active_notes[i].timestamp = hal_timestamp;
-							  active_notes[i].is_slot_active = true;
-							  break;
+							  if(!active_notes[i].is_slot_active)
+							  {
+								  active_notes[i].note = next_note.notes[FIFTH];
+								  active_notes[i].channel = next_note.channel;
+								  active_notes[i].timestamp = hal_timestamp;
+								  active_notes[i].is_slot_active = true;
+								  break;
+							  }
 						  }
 					  }
 				  }
-			  }
+				}
+
+				/* rest weighting per rhythm_rest_values */
+				next_note.rest_count = randomize(0, 99);
+				if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][0])
+					next_note.rest_count = 3;
+				else if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][1])
+					next_note.rest_count = 2;
+				else if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][2])
+					next_note.rest_count = 1;
+				else
+					next_note.rest_count = 0;
+
 			}
 		}
 	}

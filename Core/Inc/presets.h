@@ -18,12 +18,12 @@ typedef struct {
     uint8_t  mode;
     uint8_t  chords;
     uint16_t tempo_bpm;
-    uint8_t  syncopation;
+    uint8_t  rhythm;
     uint8_t  octave_low;
     uint8_t  octave_high;
 } preset_t;
 
-#define X(name, display, key, mode, chord, tempo_bpm, syncopation, low, high) PRESET_##name,
+#define X(name, display, key, mode, chord, tempo_bpm, rhythm, low, high) PRESET_##name,
 typedef enum {
 #include "presets_def.h"
     PRESET_COUNT

@@ -25,14 +25,14 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 
 ## Menu System
 
-| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo BPM  | Syncopation | Chanel L/H | Velocity L/H |
+| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo BPM  | Rhythm      | Chanel L/H | Velocity L/H |
 | ---------- | ------ | ---------- | ---------- | --- | ---------- | ---------- | ----------- | ---------- | -------- |
-| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 600        | 0%          | 1-16       | 1-127    |
-| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 300        | 50%         | 1-16       | 1-127    |
-|            |        | Vivaldi    | Phrygian   | D   |            | 200        | 100%        |            |          |
-|            |        | MilesDavis | Lydian     | D#  |            | 150        | 167%        |            |          |
-|            |        | Jazz       | Mixolydian | E   |            | 120        | 200%        |            |          |
-|            |        | ECM_Jazz   | Aeolian    | F   |            | 100        | 250%        |            |          |
+| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 600        | On-beat     | 1-16       | 1-127    |
+| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 300        | Light       | 1-16       | 1-127    |
+|            |        | Vivaldi    | Phrygian   | D   |            | 200        | 50% rest    |            |          |
+|            |        | MilesDavis | Lydian     | D#  |            | 150        | Moderate    |            |          |
+|            |        | Jazz       | Mixolydian | E   |            | 120        | Heavy       |            |          |
+|            |        | ECM_Jazz   | Aeolian    | F   |            | 100        |             |            |          |
 |            |        | Happy      | Locrian    | F#  |            | 85         |             |            |          |
 |            |        | Melodic    | Pent Major | G   |            | 75         |             |            |          |
 |            |        | Gritty     | Pent Minor | G#  |            | 66         |             |            |          |

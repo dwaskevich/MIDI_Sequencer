@@ -29,8 +29,8 @@ const char *menuNames[] = {
 struct uiEncoderValues ui_encoderValues = {0};
 bool value_encoder_ignore_next = false; /* cosmetics ... will prevent a menu "jump" when moving between menus */
 
-/* ui_settings: on_off, chords, mode, key, tempo_bpm*2, syncopation, octave_low, octave_high, channel_low, channel_high, velocity_low, velocity_high, presets */
-struct uiSettings ui_settings = {OFF, OFF, MODE_IONIAN, NOTE_C, 600, 0, 2, 6, 1, 1, 20, 100, PRESET_PEACEFUL}; /* initialize ui settings */
+/* ui_settings: on_off, chords, mode, key, tempo_bpm_msec*2, rhythm index, octave_low, octave_high, channel_low, channel_high, velocity_low, velocity_high, presets */
+struct uiSettings ui_settings = {OFF, ON, MODE_IONIAN, NOTE_C, 1000, 3, 2, 6, 1, 1, 20, 100, PRESET_PEACEFUL}; /* initialize ui settings */
 
 /* ui helpers ... cosmetics to indicate which value of a multi-value menu will be adjusted */
 bool ui_heartbeat_display_update_flag = false;
@@ -42,8 +42,9 @@ char ui_display_buffer_b[16];
 const size_t menuCount = sizeof(menuNames) / sizeof(menuNames[0]);
 int16_t menuIndex = 0;
 
-/* syncopation values (percentages expressed as decimal values) will be used in note generation for randomizing next note timing */
-const float syncopation_values[6] = {0, .5, 1, 1.67, 2, 2.5};
+/* thythm names/categories */
+const char* rhythm_names[5] = {"On-beat", "Light", "50% rest", "Moderate", "Heavy"};
+const uint16_t rhythm_rest_values[5][3] = {{0, 0, 0}, {0, 0, 25}, {0, 0, 50}, {0, 20, 60}, {10, 25, 75}};
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 {
@@ -87,14 +88,14 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 		case MENU_TEMPO:
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.tempo); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.tempo; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d/%d", 60000 / (ui_settings.tempo_bpm / 2), 60000 / ((uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation))));
+			sprintf(printBuffer, "%d", 60000 / (ui_settings.tempo_bpm / 2));
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
-		case MENU_SYNCOPATION:
-			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.syncopation); /* restore value selection encoder to previous counter value (prevents jumping) */
-			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.syncopation; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d%%", (uint16_t)(ui_settings.syncopation * 100));
+		case MENU_RHYTHM:
+			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.rhythm); /* restore value selection encoder to previous counter value (prevents jumping) */
+			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.rhythm; /* save/record previous value for use in tasks.c delta calculation */
+			sprintf(printBuffer, "%s", rhythm_names[ui_settings.rhythm]);
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
@@ -198,24 +199,24 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 	    	}
 	    	ui_settings.tempo_bpm = ui_settings.tempo_bpm; /* update ui settings for this menu item */
 	    	ui_encoderValues.tempo = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-	    	sprintf(printBuffer, "%d/%d", 60000 / (ui_settings.tempo_bpm / 2), 60000 / ((uint16_t)((ui_settings.tempo_bpm / 2) * (1 + ui_settings.syncopation))));
-			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+	    	sprintf(printBuffer, "%d", 60000 / (ui_settings.tempo_bpm / 2));
+	    	display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
-	    case MENU_SYNCOPATION:
+	    case MENU_RHYTHM:
 	    	if(encoder_value < 0)
 	    	{
 	    		__HAL_TIM_SET_COUNTER(&htim2, 0);
 	    		encoder_value = 0;
 	    	}
-	    	else if(encoder_value >= 5)
+	    	else if(encoder_value >= 4)
 	    	{
-				__HAL_TIM_SET_COUNTER(&htim2, 5*2); /* reminder ... value_encoder produces 2 counts per detent */
-				encoder_value = 5;
+				__HAL_TIM_SET_COUNTER(&htim2, 4*2); /* reminder ... value_encoder produces 2 counts per detent */
+				encoder_value = 4;
 			}
-	    	ui_settings.syncopation = syncopation_values[encoder_value]; /* update ui settings for this menu item */
-	    	ui_encoderValues.syncopation = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-	    	sprintf(printBuffer, "%d%%", (uint16_t)(ui_settings.syncopation * 100));
+	    	ui_settings.rhythm = encoder_value; /* update ui settings for this menu item */
+	    	ui_encoderValues.rhythm = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+	    	sprintf(printBuffer, "%s", rhythm_names[ui_settings.rhythm]);
 			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
@@ -352,8 +353,8 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			ui_settings.mode        = presets[ui_settings.presets].mode;
 			ui_settings.chords      = presets[ui_settings.presets].chords;
 			ui_settings.tempo_bpm   = presets[ui_settings.presets].tempo_bpm;
-			ui_settings.syncopation = syncopation_values[presets[ui_settings.presets].syncopation];
-			ui_encoderValues.syncopation = presets[ui_settings.presets].syncopation * 2; /* synchronize encoder value */
+			ui_settings.rhythm = presets[ui_settings.presets].rhythm;
+			ui_encoderValues.rhythm = presets[ui_settings.presets].rhythm * 2; /* synchronize encoder value */
 			ui_settings.octave_low  = presets[ui_settings.presets].octave_low;
 			ui_settings.octave_high = presets[ui_settings.presets].octave_high;
 #if ENABLE_CONSOLE_DEBUG

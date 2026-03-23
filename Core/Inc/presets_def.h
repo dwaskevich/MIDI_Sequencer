@@ -5,8 +5,8 @@
  *      Author: dwask
  */
 
-/* name, display_name, key, mode, chord, tempo_bpm*2, syncopation index, octave_low, octave_high */
-X(PEACEFUL,  "Peaceful",  NOTE_C, MODE_IONIAN,      1, 600, 3, 2, 6)
+/* name, display_name, key, mode, chord, tempo_bpm_msec*2, rhythm index, octave_low, octave_high */
+X(PEACEFUL,  "Peaceful",  NOTE_C, MODE_IONIAN,      1, 1000, 3, 2, 6)
 X(PIANO,     "Piano",     NOTE_E, MODE_PENT_MINOR,  1, 600, 3, 2, 6)
 X(VIVALDI,   "Vivaldi",   NOTE_E, MODE_IONIAN,      1, 600, 3, 3, 6)
 X(MILESDAVIS,"MilesDavis",NOTE_D, MODE_DORIAN,      1, 600, 5, 3, 5)

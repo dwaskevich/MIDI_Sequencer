@@ -14,7 +14,7 @@ X(MODE,          "Mode       ")
 X(KEY,           "Key        ")
 X(OCTAVE_RANGE,  "Octave L/H ")
 X(TEMPO,         "Tempo BPM  ")
-X(SYNCOPATION,   "Syncopation")
+X(RHYTHM,        "Rhythm     ")
 X(CHANNEL,       "Channel L/H")
 X(VELOCITY,      "Velocity   ")
 
