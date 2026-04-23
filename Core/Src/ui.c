@@ -42,7 +42,7 @@ char ui_display_buffer_b[16];
 const size_t menuCount = sizeof(menuNames) / sizeof(menuNames[0]);
 int16_t menuIndex = 0;
 
-/* thythm names/categories */
+/* rhythm names/categories */
 const char* rhythm_names[5] = {"On-beat", "Light", "50% rest", "Moderate", "Heavy"};
 const uint16_t rhythm_rest_values[5][3] = {{0, 0, 0}, {0, 0, 25}, {0, 0, 50}, {0, 20, 60}, {10, 25, 75}};
 

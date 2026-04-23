@@ -140,6 +140,12 @@ typedef enum {
 	SYNTHESIZER
 } miracle_keyboard_channels_t;
 
+enum {
+	REST_3_BEATS,
+	REST_2_BEATS,
+	REST_1_BEAT
+};
+
 next_note_t next_note = {0}; /* declare storage for next note structure */
 
 /* declare storage FIFO for a display buffer to hold messages for ssd1306 OLED display */
@@ -803,13 +809,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				  }
 				}
 
-				/* rest weighting per rhythm_rest_values */
+				/* rest beats density weighting per rhythm_rest_values */
 				next_note.rest_count = randomize(0, 99);
-				if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][0])
+				if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][REST_3_BEATS])
 					next_note.rest_count = 3;
-				else if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][1])
+				else if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][REST_2_BEATS])
 					next_note.rest_count = 2;
-				else if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][2])
+				else if(next_note.rest_count < rhythm_rest_values[ui_settings.rhythm][REST_1_BEAT])
 					next_note.rest_count = 1;
 				else
 					next_note.rest_count = 0;
