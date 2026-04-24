@@ -731,7 +731,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			/* send MIDI Clock (0xF8) message every interrupt to keep downstream devices in sync */
 			HAL_UART_Transmit(&huart1, &midi_clock, 1, 100);
 
-			hal_timestamp = HAL_GetTick(); /* record current time to later evaluate note-off expirations */
+			hal_timestamp = HAL_GetTick(); /* record current time for later evaluation of note-off expirations */
 
 			if(0 == next_note.rest_count--) /* check to see if next message is ready to be sent */
 			{

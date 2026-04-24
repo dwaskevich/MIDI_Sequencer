@@ -16,7 +16,7 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 - **OLED display output** using 128 x 64, .96" SSD1306 over I2C
 - **MIDI note generation** cached and displayed on OLED display
 - **13 common modes** including 5, 6 and 7 interval sequences
-- **User interface with rotary encoders** enables customized settings for mode, key, octave range, tempo, channel selection and velocity
+- **User interface with rotary encoders** enables customized settings for mode, key, octave range, tempo, rhythm, note_off delay, channel selection and velocity
 - **User presets** defined in x-macro for easy updates/additions
 - **Console UART** for debug messaging and session monitoring
 - **MIDI Out buffering** with activity LED
@@ -25,23 +25,23 @@ MIDI sequencer for the STM32F103C8T6 "Blue Pill" with SSD1306 128x64 OLED displa
 
 ## Menu System
 
-| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo BPM  | Rhythm      | Chanel L/H | Velocity L/H |
-| ---------- | ------ | ---------- | ---------- | --- | ---------- | ---------- | ----------- | ---------- | -------- |
-| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 600        | On-beat     | 1-16       | 1-127    |
-| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 300        | Light       | 1-16       | 1-127    |
-|            |        | Vivaldi    | Phrygian   | D   |            | 200        | 50% rest    |            |          |
-|            |        | MilesDavis | Lydian     | D#  |            | 150        | Moderate    |            |          |
-|            |        | Jazz       | Mixolydian | E   |            | 120        | Heavy       |            |          |
-|            |        | ECM_Jazz   | Aeolian    | F   |            | 100        |             |            |          |
-|            |        | Happy      | Locrian    | F#  |            | 85         |             |            |          |
-|            |        | Melodic    | Pent Major | G   |            | 75         |             |            |          |
-|            |        | Gritty     | Pent Minor | G#  |            | 66         |             |            |          |
-|            |        | Cinematic  | Blues      | A   |            | 60         |             |            |          |
-|            |        | Spacy      | WholeTones | A#  |            | 54         |             |            |          |
-|            |        |            | Harm Minor | B   |            | 50         |             |            |          |
-|            |        |            | Melod Min  |     |            | 46         |             |            |          |
-|            |        |            |            |     |            | 42         |             |            |          |
-|            |        |            |            |     |            | 40         |             |            |          |
+| Seq On/Off | Chords | Presets    | Modes      | Key | Octave L/H | Tempo BPM  | Rhythm    | Chanel L/H | Note_Off delay ms | Velocity L/H |
+| ---------- | ------ | ---------- | ---------- | --- | ---------- | ---------- | --------- | ---------- | -------- | -------- |
+| Off        | Off    | Peaceful   | Ionian     | C   | 0-8        | 600        | On-beat   | 1-16       | 0 - none | 1-127    |
+| On         | Triad  | Piano      | Dorian     | C#  | 0-8        | 300        | Light     | 1-16       | 50-3000  | 1-127    |
+|            |        | Vivaldi    | Phrygian   | D   |            | 200        | 50% rest  |            |          |          |
+|            |        | MilesDavis | Lydian     | D#  |            | 150        | Moderate  |            |          |          |
+|            |        | Jazz       | Mixolydian | E   |            | 120        | Heavy     |            |          |          |
+|            |        | ECM_Jazz   | Aeolian    | F   |            | 100        |           |            |          |          |
+|            |        | Happy      | Locrian    | F#  |            | 85         |           |            |          |          |
+|            |        | Melodic    | Pent Major | G   |            | 75         |           |            |          |          |
+|            |        | Gritty     | Pent Minor | G#  |            | 66         |           |            |          |          |
+|            |        | Cinematic  | Blues      | A   |            | 60         |           |            |          |          |
+|            |        | Spacy      | WholeTones | A#  |            | 54         |           |            |          |          |
+|            |        |            | Harm Minor | B   |            | 50         |           |            |          |          |
+|            |        |            | Melod Min  |     |            | 46         |           |            |          |          |
+|            |        |            |            |     |            | 42         |           |            |          |          |
+|            |        |            |            |     |            | 40         |           |            |          |          |
 
 
 ---

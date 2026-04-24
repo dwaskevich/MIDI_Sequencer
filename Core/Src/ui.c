@@ -128,10 +128,12 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 		case MENU_NOTE_OFF_DELAY:
+			ui_primary_secondary_value_flag = false; /* this menu has multi-value selection, clear primary/secondary flag */
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.note_off_duration); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.note_off_duration; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(printBuffer, "%d", channel_note_off_duration[1]);
-			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
+			sprintf(ui_display_buffer_a, "%-2d/ %d", 0, channel_note_off_duration[0]);
+			sprintf(ui_display_buffer_b, "  / %d", channel_note_off_duration[0]);
+			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
 		case MENU_PRESETS:
@@ -349,18 +351,37 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 			break;
 
 	    case MENU_NOTE_OFF_DELAY:
-	    	channel_note_off_duration[1] += delta * 50;
-	    	if(channel_note_off_duration[1] < 0)
-	    	{
-	    		channel_note_off_duration[1] = 0;
-	    	}
-	    	if(channel_note_off_duration[1] > 3000)
-	    	{
-	    		channel_note_off_duration[1] = 3000;
-	    	}
-	    	ui_encoderValues.note_off_duration = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
-	    	sprintf(printBuffer, "%d", channel_note_off_duration[1]);
-	    	display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
+			ui_heartbeat_display_update_flag = true; /* notify heartbeat task to "blink" selected value */
+			if(false == ui_primary_secondary_value_flag) /* modify/operate on primary (low) value */
+			{
+				ui_encoderValues.channel_selection += delta;
+				if(ui_encoderValues.channel_selection < 0)
+				{
+					ui_encoderValues.channel_selection = 0;
+				}
+				if(ui_encoderValues.channel_selection >= 15)
+				{
+					ui_encoderValues.channel_selection = 15;
+				}
+				ui_encoderValues.note_off_duration = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+				sprintf(ui_display_buffer_a, "%-2d/ %d", ui_encoderValues.channel_selection, channel_note_off_duration[ui_encoderValues.channel_selection]);
+				sprintf(ui_display_buffer_b, "  / %d", channel_note_off_duration[ui_encoderValues.channel_selection]);
+			}
+			else /* modify/operate on secondary (high) value */
+			{
+		    	channel_note_off_duration[ui_encoderValues.channel_selection] += delta * 50;
+		    	if(channel_note_off_duration[ui_encoderValues.channel_selection] < 0)
+		    	{
+		    		channel_note_off_duration[ui_encoderValues.channel_selection] = 0;
+		    	}
+		    	if(channel_note_off_duration[ui_encoderValues.channel_selection] > 3000)
+		    	{
+		    		channel_note_off_duration[ui_encoderValues.channel_selection] = 3000;
+		    	}
+				ui_encoderValues.note_off_duration = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+				sprintf(ui_display_buffer_a, "%-2d/ %d", ui_encoderValues.channel_selection, channel_note_off_duration[ui_encoderValues.channel_selection]);
+				sprintf(ui_display_buffer_b, "%-2d/", ui_encoderValues.channel_selection);
+			}
 			break;
 
 	    case MENU_PRESETS:
