@@ -63,7 +63,7 @@ struct uiSettings {
 	int16_t   velocity_low;
 	int16_t   velocity_high;
 	int16_t   note_off_duration;
-	int16_t  channel_selection;
+	int16_t   channel_selection;
 	int16_t   presets;
 };
 

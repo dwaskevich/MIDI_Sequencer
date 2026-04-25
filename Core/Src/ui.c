@@ -131,8 +131,8 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			ui_primary_secondary_value_flag = false; /* this menu has multi-value selection, clear primary/secondary flag */
 			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.note_off_duration); /* restore value selection encoder to previous counter value (prevents jumping) */
 			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.note_off_duration; /* save/record previous value for use in tasks.c delta calculation */
-			sprintf(ui_display_buffer_a, "%-2d/ %d", 0, channel_note_off_duration[0]);
-			sprintf(ui_display_buffer_b, "  / %d", channel_note_off_duration[0]);
+			sprintf(ui_display_buffer_a, "%-2d/ %d", ui_encoderValues.channel_selection, channel_note_off_duration[ui_encoderValues.channel_selection]);
+			sprintf(ui_display_buffer_b, "  / %d", channel_note_off_duration[ui_encoderValues.channel_selection]);
 			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
