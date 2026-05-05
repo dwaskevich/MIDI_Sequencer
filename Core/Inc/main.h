@@ -43,6 +43,8 @@ extern TIM_HandleTypeDef htim4;
 extern uint8_t scale_notes[128];
 extern uint16_t scale_length;
 
+extern int16_t channel_note_off_duration[16];
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

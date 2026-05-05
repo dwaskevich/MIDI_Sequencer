@@ -44,6 +44,7 @@ int16_t menuIndex = 0;
 
 /* rhythm names/categories */
 const char* rhythm_names[5] = {"On-beat", "Light", "50% rest", "Moderate", "Heavy"};
+/* rhythm random densities */
 const uint16_t rhythm_rest_values[5][3] = {{0, 0, 0}, {0, 0, 25}, {0, 0, 50}, {0, 20, 60}, {10, 25, 75}};
 
 void handle_menu_encoder(int16_t encoder_value, int16_t delta)
@@ -124,6 +125,13 @@ void handle_menu_encoder(int16_t encoder_value, int16_t delta)
 			sprintf(ui_display_buffer_a, "%-3d/ %d", ui_settings.velocity_low, ui_settings.velocity_high);
 			sprintf(ui_display_buffer_b, "   / %d", ui_settings.velocity_high);
 			display_string_to_status_line(ui_display_buffer_a, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
+			break;
+
+		case MENU_NOTE_OFF_DELAY:
+			__HAL_TIM_SET_COUNTER(&htim2, ui_encoderValues.note_off_duration); /* restore value selection encoder to previous counter value (prevents jumping) */
+			ui_encoderValues.value_encoder_previous_value = ui_encoderValues.note_off_duration; /* save/record previous value for use in tasks.c delta calculation */
+			sprintf(printBuffer, "%d", channel_note_off_duration[1]);
+			display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post to top line of display */
 			break;
 
 		case MENU_PRESETS:
@@ -338,6 +346,21 @@ void handle_value_encoder(int16_t encoder_value, int16_t delta)
 				sprintf(ui_display_buffer_a, "%-3d/ %d", ui_settings.velocity_low, ui_settings.velocity_high);
 				sprintf(ui_display_buffer_b, "%-3d/", ui_settings.velocity_low);
 			}
+			break;
+
+	    case MENU_NOTE_OFF_DELAY:
+	    	channel_note_off_duration[1] += delta * 50;
+	    	if(channel_note_off_duration[1] < 0)
+	    	{
+	    		channel_note_off_duration[1] = 0;
+	    	}
+	    	if(channel_note_off_duration[1] > 3000)
+	    	{
+	    		channel_note_off_duration[1] = 3000;
+	    	}
+	    	ui_encoderValues.note_off_duration = __HAL_TIM_GET_COUNTER(&htim2); /* store/remember counter value for next entry into this menu by left encoder */
+	    	sprintf(printBuffer, "%d", channel_note_off_duration[1]);
+	    	display_string_to_status_line(printBuffer, RIGHT_ENCODER_POSITION, White, true); /* post status to display */
 			break;
 
 	    case MENU_PRESETS:

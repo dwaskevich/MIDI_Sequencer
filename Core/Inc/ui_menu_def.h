@@ -16,6 +16,7 @@ X(OCTAVE_RANGE,  "Octave L/H ")
 X(TEMPO,         "Tempo BPM  ")
 X(RHYTHM,        "Rhythm     ")
 X(CHANNEL,       "Channel L/H")
+X(NOTE_OFF_DELAY,"Note_Off   ")
 X(VELOCITY,      "Velocity   ")
 
 

@@ -157,8 +157,8 @@ volatile uint16_t headPointer = 0, tailPointer = 0; /* FIFO head and tail pointe
 #define MAX_ACTIVE_NOTES 128
 static active_note_t active_notes[MAX_ACTIVE_NOTES] = {0};
 
-/* look-up table for Miracle keyboard note-off durations based on virtual instrument/channel number (channels 0-8) ... channels 9-16 just default values */
-const uint16_t channel_note_off_duration[16] = {0, 0, 0, 2500, 0, 0, 2500, 2000, 0, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
+/* look-up table for note-off durations based on virtual instrument/channel number (channels 0-8) ... channels 9-16 just default values */
+int16_t channel_note_off_duration[16] = {0, 0, 0, 2500, 0, 0, 2500, 2000, 0, 200, 200, 200, 200, 200, 200, 200};
 
 /* USER CODE END PV */
 
